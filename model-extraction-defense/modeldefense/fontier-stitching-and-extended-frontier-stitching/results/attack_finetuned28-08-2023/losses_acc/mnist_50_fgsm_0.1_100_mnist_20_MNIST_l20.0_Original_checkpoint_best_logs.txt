@@ -1,0 +1,13 @@
+Just After loading victim model adv acc is: 0.94
+Victim model ../models/finetuned_retraining_27-08-2023/true/mnist_100_MNIST_l20.0fgsm_0.1_100_mnist_20_MNIST_l20.0_Original_checkpoint_best/Victim_checkpoint_best.h5test acc with 250 is 0.9138000011444092
+adv acc with 250 is 0.6600000262260437
+Victim model ../models/finetuned_retraining_27-08-2023/true/mnist_100_MNIST_l20.0fgsm_0.1_100_mnist_20_MNIST_l20.0_Original_checkpoint_best/Victim_checkpoint_best.h5test acc with 500 is 0.9441999793052673
+adv acc with 500 is 0.699999988079071
+Victim model ../models/finetuned_retraining_27-08-2023/true/mnist_100_MNIST_l20.0fgsm_0.1_100_mnist_20_MNIST_l20.0_Original_checkpoint_best/Victim_checkpoint_best.h5test acc with 1000 is 0.9668999910354614
+adv acc with 1000 is 0.7400000095367432
+Victim model ../models/finetuned_retraining_27-08-2023/true/mnist_100_MNIST_l20.0fgsm_0.1_100_mnist_20_MNIST_l20.0_Original_checkpoint_best/Victim_checkpoint_best.h5test acc with 5000 is 0.9882000088691711
+adv acc with 5000 is 0.7599999904632568
+Victim model ../models/finetuned_retraining_27-08-2023/true/mnist_100_MNIST_l20.0fgsm_0.1_100_mnist_20_MNIST_l20.0_Original_checkpoint_best/Victim_checkpoint_best.h5test acc with 10000 is 0.9930999875068665
+adv acc with 10000 is 0.7799999713897705
+Victim model ../models/finetuned_retraining_27-08-2023/true/mnist_100_MNIST_l20.0fgsm_0.1_100_mnist_20_MNIST_l20.0_Original_checkpoint_best/Victim_checkpoint_best.h5test acc with 20000 is 0.9930999875068665
+adv acc with 20000 is 0.8399999737739563

@@ -1,0 +1,254 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 8 files
+Detected 13 issues that require attention
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+File: Tensorflowv1/train.py
+--------------------------------------------------------------------------------
+Tensorflowv1/train.py:27:12: WARNING: tf.contrib.image.transform requires manual check. (Manual edit required) `tf.contrib.image.transform` has been migrated to `tfa.image.transform` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+Tensorflowv1/train.py:27:12: ERROR: Using member tf.contrib.image.transform in deprecated module tf.contrib. tf.contrib.image.transform cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+Tensorflowv1/train.py:27:46: WARNING: tf.contrib.image.angles_to_projective_transforms requires manual check. (Manual edit required) `tf.contrib.image.angles_to_projective_transforms` has been migrated to `tfa.image.angles_to_projective_transforms` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+Tensorflowv1/train.py:27:46: ERROR: Using member tf.contrib.image.angles_to_projective_transforms in deprecated module tf.contrib. tf.contrib.image.angles_to_projective_transforms cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+--------------------------------------------------------------------------------
+File: Tensorflowv1/resnet.py
+--------------------------------------------------------------------------------
+Tensorflowv1/resnet.py:149:11: ERROR: Using member tf.contrib.layers.batch_norm in deprecated module tf.contrib. tf.contrib.layers.batch_norm cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+--------------------------------------------------------------------------------
+File: Tensorflowv1/train_edited.py
+--------------------------------------------------------------------------------
+Tensorflowv1/train_edited.py:33:12: WARNING: tf.contrib.image.transform requires manual check. (Manual edit required) `tf.contrib.image.transform` has been migrated to `tfa.image.transform` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+Tensorflowv1/train_edited.py:33:12: ERROR: Using member tf.contrib.image.transform in deprecated module tf.contrib. tf.contrib.image.transform cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+Tensorflowv1/train_edited.py:33:46: WARNING: tf.contrib.image.angles_to_projective_transforms requires manual check. (Manual edit required) `tf.contrib.image.angles_to_projective_transforms` has been migrated to `tfa.image.angles_to_projective_transforms` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+Tensorflowv1/train_edited.py:33:46: ERROR: Using member tf.contrib.image.angles_to_projective_transforms in deprecated module tf.contrib. tf.contrib.image.angles_to_projective_transforms cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+--------------------------------------------------------------------------------
+File: Tensorflowv1/utils.py
+--------------------------------------------------------------------------------
+Tensorflowv1/utils.py:111:12: WARNING: tf.contrib.image.transform requires manual check. (Manual edit required) `tf.contrib.image.transform` has been migrated to `tfa.image.transform` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+Tensorflowv1/utils.py:111:12: ERROR: Using member tf.contrib.image.transform in deprecated module tf.contrib. tf.contrib.image.transform cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+Tensorflowv1/utils.py:111:46: WARNING: tf.contrib.image.angles_to_projective_transforms requires manual check. (Manual edit required) `tf.contrib.image.angles_to_projective_transforms` has been migrated to `tfa.image.angles_to_projective_transforms` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+Tensorflowv1/utils.py:111:46: ERROR: Using member tf.contrib.image.angles_to_projective_transforms in deprecated module tf.contrib. tf.contrib.image.angles_to_projective_transforms cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+================================================================================
+Detailed log follows:
+
+================================================================================
+================================================================================
+Input tree: 'Tensorflowv1/'
+================================================================================
+--------------------------------------------------------------------------------
+Processing file 'Tensorflowv1/train.py'
+ outputting to 'Tensorflowv2/train.py'
+--------------------------------------------------------------------------------
+
+17:0: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+26:45: INFO: Added keywords to args of function 'tf.shape'
+27:12: WARNING: tf.contrib.image.transform requires manual check. (Manual edit required) `tf.contrib.image.transform` has been migrated to `tfa.image.transform` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+27:12: ERROR: Using member tf.contrib.image.transform in deprecated module tf.contrib. tf.contrib.image.transform cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+27:46: WARNING: tf.contrib.image.angles_to_projective_transforms requires manual check. (Manual edit required) `tf.contrib.image.angles_to_projective_transforms` has been migrated to `tfa.image.angles_to_projective_transforms` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+27:46: ERROR: Using member tf.contrib.image.angles_to_projective_transforms in deprecated module tf.contrib. tf.contrib.image.angles_to_projective_transforms cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+42:4: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+125:4: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+127:4: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+136:22: INFO: Added keywords to args of function 'tf.cond'
+143:11: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+144:13: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+442:4: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+444:4: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+451:22: INFO: Added keywords to args of function 'tf.cond'
+459:11: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+460:13: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+492:4: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+494:4: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+501:22: INFO: Added keywords to args of function 'tf.cond'
+509:11: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+510:13: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+573:4: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+575:4: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+582:22: INFO: Added keywords to args of function 'tf.cond'
+590:11: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+591:13: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+778:4: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'Tensorflowv1/models_training.py'
+ outputting to 'Tensorflowv2/models_training.py'
+--------------------------------------------------------------------------------
+
+163:4: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+165:4: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+173:22: INFO: Added keywords to args of function 'tf.cond'
+181:11: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+182:13: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'Tensorflowv1/resnet.py'
+ outputting to 'Tensorflowv2/resnet.py'
+--------------------------------------------------------------------------------
+
+6:0: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+22:9: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+23:12: INFO: Renamed 'tf.layers.conv2d' to 'tf.compat.v1.layers.conv2d'
+31:9: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+33:12: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+38:9: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+59:9: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+75:9: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+126:11: INFO: Renamed 'tf.layers.flatten' to 'tf.compat.v1.layers.flatten'
+129:10: INFO: Added keywords to args of function 'tf.reduce_mean'
+133:11: INFO: Renamed 'tf.layers.average_pooling2d' to 'tf.compat.v1.layers.average_pooling2d'
+149:11: ERROR: Using member tf.contrib.layers.batch_norm in deprecated module tf.contrib. tf.contrib.layers.batch_norm cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+159:11: INFO: Added keywords to args of function 'tf.reduce_mean'
+159:26: INFO: Renamed 'tf.nn.softmax_cross_entropy_with_logits_v2' to 'tf.nn.softmax_cross_entropy_with_logits'
+160:26: INFO: Added keywords to args of function 'tf.argmax'
+160:48: INFO: Added keywords to args of function 'tf.argmax'
+161:15: INFO: Added keywords to args of function 'tf.reduce_mean'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'Tensorflowv1/watermark_dataset.py'
+ outputting to 'Tensorflowv2/watermark_dataset.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'Tensorflowv1/trigger.py'
+ outputting to 'Tensorflowv2/trigger.py'
+--------------------------------------------------------------------------------
+
+
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'Tensorflowv1/models.py'
+ outputting to 'Tensorflowv2/models.py'
+--------------------------------------------------------------------------------
+
+8:0: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+12:32: INFO: Added keywords to args of function 'tf.reduce_sum'
+13:32: INFO: Added keywords to args of function 'tf.reduce_sum'
+15:34: INFO: Added keywords to args of function 'tf.shape'
+16:37: INFO: Added keywords to args of function 'tf.shape'
+29:55: INFO: Added keywords to args of function 'tf.shape'
+31:52: INFO: Added keywords to args of function 'tf.shape'
+34:56: INFO: Added keywords to args of function 'tf.shape'
+35:44: INFO: Added keywords to args of function 'tf.reduce_sum'
+36:13: INFO: Added keywords to args of function 'tf.reduce_mean'
+36:50: INFO: Added keywords to args of function 'tf.reduce_sum'
+53:17: INFO: Added keywords to args of function 'tf.argmax'
+71:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+85:20: INFO: Added keywords to args of function 'tf.cond'
+93:16: INFO: Added keywords to args of function 'tf.cond'
+101:20: INFO: Added keywords to args of function 'tf.cond'
+109:16: INFO: Added keywords to args of function 'tf.cond'
+116:20: INFO: Added keywords to args of function 'tf.cond'
+124:16: INFO: Added keywords to args of function 'tf.cond'
+133:20: INFO: Added keywords to args of function 'tf.cond'
+141:16: INFO: Added keywords to args of function 'tf.cond'
+154:32: INFO: Added keywords to args of function 'tf.argmax'
+154:54: INFO: Added keywords to args of function 'tf.argmax'
+155:15: INFO: Added keywords to args of function 'tf.reduce_mean'
+172:26: INFO: Added keywords to args of function 'tf.reduce_sum'
+176:20: INFO: Renamed 'tf.train.AdamOptimizer' to 'tf.compat.v1.train.AdamOptimizer'
+179:51: INFO: Added keywords to args of function 'tf.math.reduce_mean'
+180:73: INFO: Added keywords to args of function 'tf.gradients'
+183:15: INFO: Added keywords to args of function 'tf.gradients'
+186:15: INFO: Added keywords to args of function 'tf.gradients'
+199:17: INFO: Added keywords to args of function 'tf.argmax'
+209:13: INFO: Renamed 'tf.variable_scope' to 'tf.compat.v1.variable_scope'
+222:20: INFO: Added keywords to args of function 'tf.cond'
+230:16: INFO: Added keywords to args of function 'tf.cond'
+238:20: INFO: Added keywords to args of function 'tf.cond'
+246:16: INFO: Added keywords to args of function 'tf.cond'
+253:20: INFO: Added keywords to args of function 'tf.cond'
+260:16: INFO: Added keywords to args of function 'tf.cond'
+267:20: INFO: Added keywords to args of function 'tf.cond'
+275:16: INFO: Added keywords to args of function 'tf.cond'
+288:26: INFO: Added keywords to args of function 'tf.reduce_sum'
+292:20: INFO: Renamed 'tf.train.AdamOptimizer' to 'tf.compat.v1.train.AdamOptimizer'
+296:32: INFO: Added keywords to args of function 'tf.argmax'
+296:54: INFO: Added keywords to args of function 'tf.argmax'
+297:15: INFO: Added keywords to args of function 'tf.reduce_mean'
+312:17: INFO: Added keywords to args of function 'tf.argmax'
+319:38: INFO: Renamed 'tf.layers.conv2d' to 'tf.compat.v1.layers.conv2d'
+320:41: INFO: Renamed 'tf.layers.dropout' to 'tf.compat.v1.layers.dropout'
+321:38: INFO: Renamed 'tf.layers.max_pooling2d' to 'tf.compat.v1.layers.max_pooling2d'
+322:36: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+323:36: INFO: Renamed 'tf.layers.batch_normalization' to 'tf.compat.v1.layers.batch_normalization'
+366:26: INFO: Added keywords to args of function 'tf.reduce_sum'
+371:20: INFO: Renamed 'tf.train.AdamOptimizer' to 'tf.compat.v1.train.AdamOptimizer'
+374:51: INFO: Added keywords to args of function 'tf.math.reduce_mean'
+375:74: INFO: Added keywords to args of function 'tf.gradients'
+378:32: INFO: Added keywords to args of function 'tf.argmax'
+378:54: INFO: Added keywords to args of function 'tf.argmax'
+379:15: INFO: Added keywords to args of function 'tf.reduce_mean'
+382:15: INFO: Added keywords to args of function 'tf.gradients'
+385:15: INFO: Added keywords to args of function 'tf.gradients'
+398:17: INFO: Added keywords to args of function 'tf.argmax'
+399:38: INFO: Renamed 'tf.layers.conv2d' to 'tf.compat.v1.layers.conv2d'
+400:41: INFO: Renamed 'tf.layers.dropout' to 'tf.compat.v1.layers.dropout'
+401:38: INFO: Renamed 'tf.layers.max_pooling2d' to 'tf.compat.v1.layers.max_pooling2d'
+402:36: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+403:36: INFO: Renamed 'tf.layers.batch_normalization' to 'tf.compat.v1.layers.batch_normalization'
+425:26: INFO: Added keywords to args of function 'tf.reduce_sum'
+427:20: INFO: Renamed 'tf.train.AdamOptimizer' to 'tf.compat.v1.train.AdamOptimizer'
+431:32: INFO: Added keywords to args of function 'tf.argmax'
+431:54: INFO: Added keywords to args of function 'tf.argmax'
+432:15: INFO: Added keywords to args of function 'tf.reduce_mean'
+447:17: INFO: Added keywords to args of function 'tf.argmax'
+448:20: INFO: Renamed 'tf.contrib.rnn.BasicLSTMCell' to 'tf.compat.v1.nn.rnn_cell.BasicLSTMCell'
+455:36: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+465:20: INFO: Renamed 'tf.contrib.rnn.static_rnn' to 'tf.compat.v1.nn.static_rnn'
+492:26: INFO: Added keywords to args of function 'tf.reduce_sum'
+493:20: INFO: Renamed 'tf.train.AdamOptimizer' to 'tf.compat.v1.train.AdamOptimizer'
+496:51: INFO: Added keywords to args of function 'tf.math.reduce_mean'
+497:74: INFO: Added keywords to args of function 'tf.gradients'
+500:32: INFO: Added keywords to args of function 'tf.argmax'
+500:54: INFO: Added keywords to args of function 'tf.argmax'
+501:15: INFO: Added keywords to args of function 'tf.reduce_mean'
+504:15: INFO: Added keywords to args of function 'tf.gradients'
+507:15: INFO: Added keywords to args of function 'tf.gradients'
+520:17: INFO: Added keywords to args of function 'tf.argmax'
+521:20: INFO: Renamed 'tf.contrib.rnn.BasicLSTMCell' to 'tf.compat.v1.nn.rnn_cell.BasicLSTMCell'
+522:36: INFO: Renamed 'tf.layers.dense' to 'tf.compat.v1.layers.dense'
+528:20: INFO: Renamed 'tf.contrib.rnn.static_rnn' to 'tf.compat.v1.nn.static_rnn'
+537:26: INFO: Added keywords to args of function 'tf.reduce_sum'
+538:20: INFO: Renamed 'tf.train.AdamOptimizer' to 'tf.compat.v1.train.AdamOptimizer'
+542:32: INFO: Added keywords to args of function 'tf.argmax'
+542:54: INFO: Added keywords to args of function 'tf.argmax'
+543:15: INFO: Added keywords to args of function 'tf.reduce_mean'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'Tensorflowv1/train_edited.py'
+ outputting to 'Tensorflowv2/train_edited.py'
+--------------------------------------------------------------------------------
+
+24:0: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+33:12: WARNING: tf.contrib.image.transform requires manual check. (Manual edit required) `tf.contrib.image.transform` has been migrated to `tfa.image.transform` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+33:12: ERROR: Using member tf.contrib.image.transform in deprecated module tf.contrib. tf.contrib.image.transform cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+33:46: WARNING: tf.contrib.image.angles_to_projective_transforms requires manual check. (Manual edit required) `tf.contrib.image.angles_to_projective_transforms` has been migrated to `tfa.image.angles_to_projective_transforms` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+33:46: ERROR: Using member tf.contrib.image.angles_to_projective_transforms in deprecated module tf.contrib. tf.contrib.image.angles_to_projective_transforms cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+48:4: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+100:4: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+102:4: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+113:22: INFO: Added keywords to args of function 'tf.cond'
+120:11: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+121:13: INFO: Renamed 'tf.global_variables_initializer' to 'tf.compat.v1.global_variables_initializer'
+388:4: INFO: Renamed 'tf.random.set_random_seed' to 'tf.compat.v1.random.set_random_seed'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'Tensorflowv1/utils.py'
+ outputting to 'Tensorflowv2/utils.py'
+--------------------------------------------------------------------------------
+
+111:12: WARNING: tf.contrib.image.transform requires manual check. (Manual edit required) `tf.contrib.image.transform` has been migrated to `tfa.image.transform` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+111:12: ERROR: Using member tf.contrib.image.transform in deprecated module tf.contrib. tf.contrib.image.transform cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+111:46: WARNING: tf.contrib.image.angles_to_projective_transforms requires manual check. (Manual edit required) `tf.contrib.image.angles_to_projective_transforms` has been migrated to `tfa.image.angles_to_projective_transforms` in TensorFlow Addons. The API spec may have changed during the migration. Please see https://github.com/tensorflow/addons for more info.
+111:46: ERROR: Using member tf.contrib.image.angles_to_projective_transforms in deprecated module tf.contrib. tf.contrib.image.angles_to_projective_transforms cannot be converted automatically. tf.contrib will not be distributed with TensorFlow 2.0, please consider an alternative in non-contrib TensorFlow, a community-maintained repository such as tensorflow/addons, or fork the required code.
+--------------------------------------------------------------------------------
+

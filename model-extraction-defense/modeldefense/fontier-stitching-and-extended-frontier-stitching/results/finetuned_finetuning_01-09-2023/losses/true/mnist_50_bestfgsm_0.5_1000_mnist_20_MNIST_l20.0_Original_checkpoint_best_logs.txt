@@ -1,0 +1,55 @@
+Loaded model test acc: [0.029522305354475975, 0.9908999800682068] 
+Finetuned model test acc: [0.07630543410778046, 0.9753000140190125] 
+Finetuned model train adv acc: [0.08391823619604111, 0.9888888597488403]
+Finetuned model test adv acc: [0.5737553238868713, 0.8600000143051147]
+Epoch: 1, Train Loss: 5.499 Train Acc: 0.498 Val Loss: 0.022 Val Acc: 0.995
+Epoch: 2, Train Loss: 5.349 Train Acc: 0.498 Val Loss: 0.022 Val Acc: 0.995
+Epoch: 3, Train Loss: 4.869 Train Acc: 0.507 Val Loss: 0.025 Val Acc: 0.994
+Epoch: 4, Train Loss: 4.190 Train Acc: 0.522 Val Loss: 0.040 Val Acc: 0.989
+Epoch: 5, Train Loss: 3.460 Train Acc: 0.530 Val Loss: 0.072 Val Acc: 0.978
+Epoch: 6, Train Loss: 2.858 Train Acc: 0.532 Val Loss: 0.102 Val Acc: 0.970
+Epoch: 7, Train Loss: 2.378 Train Acc: 0.563 Val Loss: 0.103 Val Acc: 0.968
+Epoch: 8, Train Loss: 1.986 Train Acc: 0.574 Val Loss: 0.093 Val Acc: 0.971
+Epoch: 9, Train Loss: 1.671 Train Acc: 0.591 Val Loss: 0.097 Val Acc: 0.969
+Epoch: 10, Train Loss: 1.429 Train Acc: 0.614 Val Loss: 0.115 Val Acc: 0.962
+Epoch: 11, Train Loss: 1.212 Train Acc: 0.631 Val Loss: 0.112 Val Acc: 0.964
+Epoch: 12, Train Loss: 1.058 Train Acc: 0.659 Val Loss: 0.112 Val Acc: 0.964
+Epoch: 13, Train Loss: 0.915 Train Acc: 0.705 Val Loss: 0.109 Val Acc: 0.966
+Epoch: 14, Train Loss: 0.811 Train Acc: 0.742 Val Loss: 0.106 Val Acc: 0.967
+Epoch: 15, Train Loss: 0.717 Train Acc: 0.779 Val Loss: 0.094 Val Acc: 0.971
+Epoch: 16, Train Loss: 0.626 Train Acc: 0.811 Val Loss: 0.098 Val Acc: 0.970
+Epoch: 17, Train Loss: 0.553 Train Acc: 0.842 Val Loss: 0.093 Val Acc: 0.972
+Epoch: 18, Train Loss: 0.486 Train Acc: 0.868 Val Loss: 0.087 Val Acc: 0.974
+Epoch: 19, Train Loss: 0.426 Train Acc: 0.888 Val Loss: 0.085 Val Acc: 0.974
+Epoch: 20, Train Loss: 0.374 Train Acc: 0.896 Val Loss: 0.087 Val Acc: 0.973
+Epoch: 21, Train Loss: 0.326 Train Acc: 0.923 Val Loss: 0.089 Val Acc: 0.972
+Epoch: 22, Train Loss: 0.283 Train Acc: 0.949 Val Loss: 0.083 Val Acc: 0.974
+Epoch: 23, Train Loss: 0.246 Train Acc: 0.948 Val Loss: 0.080 Val Acc: 0.974
+Epoch: 24, Train Loss: 0.213 Train Acc: 0.962 Val Loss: 0.084 Val Acc: 0.973
+Epoch: 25, Train Loss: 0.183 Train Acc: 0.977 Val Loss: 0.082 Val Acc: 0.974
+Epoch: 26, Train Loss: 0.162 Train Acc: 0.977 Val Loss: 0.079 Val Acc: 0.975
+Epoch: 27, Train Loss: 0.141 Train Acc: 0.981 Val Loss: 0.080 Val Acc: 0.974
+Epoch: 28, Train Loss: 0.125 Train Acc: 0.986 Val Loss: 0.082 Val Acc: 0.973
+Epoch: 29, Train Loss: 0.109 Train Acc: 0.989 Val Loss: 0.079 Val Acc: 0.974
+Epoch: 30, Train Loss: 0.097 Train Acc: 0.993 Val Loss: 0.079 Val Acc: 0.974
+Epoch: 31, Train Loss: 0.081 Train Acc: 0.996 Val Loss: 0.081 Val Acc: 0.974
+Epoch: 32, Train Loss: 0.073 Train Acc: 0.999 Val Loss: 0.076 Val Acc: 0.975
+Epoch: 33, Train Loss: 0.064 Train Acc: 1.000 Val Loss: 0.077 Val Acc: 0.975
+Epoch: 34, Train Loss: 0.058 Train Acc: 1.000 Val Loss: 0.077 Val Acc: 0.975
+Epoch: 35, Train Loss: 0.051 Train Acc: 1.000 Val Loss: 0.077 Val Acc: 0.975
+Epoch: 36, Train Loss: 0.046 Train Acc: 1.000 Val Loss: 0.075 Val Acc: 0.975
+Epoch: 37, Train Loss: 0.041 Train Acc: 1.000 Val Loss: 0.074 Val Acc: 0.976
+Epoch: 38, Train Loss: 0.037 Train Acc: 1.000 Val Loss: 0.076 Val Acc: 0.975
+Epoch: 39, Train Loss: 0.035 Train Acc: 1.000 Val Loss: 0.075 Val Acc: 0.975
+Epoch: 40, Train Loss: 0.032 Train Acc: 1.000 Val Loss: 0.075 Val Acc: 0.975
+Epoch: 41, Train Loss: 0.029 Train Acc: 1.000 Val Loss: 0.075 Val Acc: 0.976
+Epoch: 42, Train Loss: 0.026 Train Acc: 1.000 Val Loss: 0.074 Val Acc: 0.976
+Epoch: 43, Train Loss: 0.024 Train Acc: 1.000 Val Loss: 0.074 Val Acc: 0.976
+Epoch: 44, Train Loss: 0.022 Train Acc: 1.000 Val Loss: 0.075 Val Acc: 0.976
+Epoch: 45, Train Loss: 0.021 Train Acc: 1.000 Val Loss: 0.074 Val Acc: 0.976
+Epoch: 46, Train Loss: 0.020 Train Acc: 1.000 Val Loss: 0.074 Val Acc: 0.976
+Epoch: 47, Train Loss: 0.019 Train Acc: 1.000 Val Loss: 0.074 Val Acc: 0.976
+Epoch: 48, Train Loss: 0.017 Train Acc: 1.000 Val Loss: 0.074 Val Acc: 0.976
+Epoch: 49, Train Loss: 0.016 Train Acc: 1.000 Val Loss: 0.075 Val Acc: 0.975
+Epoch: 50, Train Loss: 0.015 Train Acc: 1.000 Val Loss: 0.074 Val Acc: 0.976
+After loading the model adv : 0.0

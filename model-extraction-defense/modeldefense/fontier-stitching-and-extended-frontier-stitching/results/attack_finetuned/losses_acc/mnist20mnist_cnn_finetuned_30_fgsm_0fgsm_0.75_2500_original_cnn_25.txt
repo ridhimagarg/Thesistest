@@ -1,0 +1,13 @@
+Just After loading victim model adv acc is: 0.9432
+Victim model ../models/mnist_cnn_finetuned_30_fgsm_0.75_2500_original_cnn_25.h5test acc with 250 is 0.38519999384880066
+adv acc with 250 is 0.1103999987244606
+Victim model ../models/mnist_cnn_finetuned_30_fgsm_0.75_2500_original_cnn_25.h5test acc with 500 is 0.8659999966621399
+adv acc with 500 is 0.2632000148296356
+Victim model ../models/mnist_cnn_finetuned_30_fgsm_0.75_2500_original_cnn_25.h5test acc with 1000 is 0.8877999782562256
+adv acc with 1000 is 0.21480000019073486
+Victim model ../models/mnist_cnn_finetuned_30_fgsm_0.75_2500_original_cnn_25.h5test acc with 5000 is 0.9510999917984009
+adv acc with 5000 is 0.21359999477863312
+Victim model ../models/mnist_cnn_finetuned_30_fgsm_0.75_2500_original_cnn_25.h5test acc with 10000 is 0.9778000116348267
+adv acc with 10000 is 0.24400000274181366
+Victim model ../models/mnist_cnn_finetuned_30_fgsm_0.75_2500_original_cnn_25.h5test acc with 20000 is 0.9397000074386597
+adv acc with 20000 is 0.2264000028371811

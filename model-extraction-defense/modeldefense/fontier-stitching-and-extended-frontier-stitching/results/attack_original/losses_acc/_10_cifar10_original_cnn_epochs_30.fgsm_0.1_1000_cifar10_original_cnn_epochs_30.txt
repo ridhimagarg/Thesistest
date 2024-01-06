@@ -1,0 +1,13 @@
+Just After loading victim model adv acc is: 0.118
+Victim model ../models/cifar10_original_cnn_epochs_30.h5test acc with 250 is 0.1573999971151352
+adv acc with 250 is 0.15800000727176666
+Victim model ../models/cifar10_original_cnn_epochs_30.h5test acc with 500 is 0.14790000021457672
+adv acc with 500 is 0.14100000262260437
+Victim model ../models/cifar10_original_cnn_epochs_30.h5test acc with 1000 is 0.22450000047683716
+adv acc with 1000 is 0.2280000001192093
+Victim model ../models/cifar10_original_cnn_epochs_30.h5test acc with 5000 is 0.33550000190734863
+adv acc with 5000 is 0.3050000071525574
+Victim model ../models/cifar10_original_cnn_epochs_30.h5test acc with 10000 is 0.4032999873161316
+adv acc with 10000 is 0.4020000100135803
+Victim model ../models/cifar10_original_cnn_epochs_30.h5test acc with 20000 is 0.45339998602867126
+adv acc with 20000 is 0.42500001192092896

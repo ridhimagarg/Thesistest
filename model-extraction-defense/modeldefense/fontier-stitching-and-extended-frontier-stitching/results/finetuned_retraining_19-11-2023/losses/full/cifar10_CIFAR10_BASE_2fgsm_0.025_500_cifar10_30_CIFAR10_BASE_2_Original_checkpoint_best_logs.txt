@@ -1,0 +1,49 @@
+Total training time: 149.1666738986969 seconds
+Finetuned model test acc: [0.6400768756866455, 0.7979999780654907] 
+Finetuned model train adv acc: [0.7488067150115967, 0.7888888716697693]
+Finetuned model test adv acc: [0.8474538326263428, 0.7400000095367432]
+Epoch: 1, Train Loss: 1.836 Train Acc: 0.382 Val Loss: 2.864 Val Acc: 0.148 and normal test acc: 0.140 and adv acc: 0.116 and epoch time :5.637044668197632 seconds 
+
+Epoch: 2, Train Loss: 1.291 Train Acc: 0.533 Val Loss: 1.075 Val Acc: 0.606 and normal test acc: 0.604 and adv acc: 0.680 and epoch time :26.419046878814697 seconds 
+
+Epoch: 3, Train Loss: 1.087 Train Acc: 0.612 Val Loss: 0.981 Val Acc: 0.657 and normal test acc: 0.640 and adv acc: 0.674 and epoch time :4.688692331314087 seconds 
+
+Epoch: 4, Train Loss: 0.962 Train Acc: 0.661 Val Loss: 1.007 Val Acc: 0.647 and normal test acc: 0.636 and adv acc: 0.648 and epoch time :4.807710409164429 seconds 
+
+Epoch: 5, Train Loss: 0.868 Train Acc: 0.693 Val Loss: 0.742 Val Acc: 0.730 and normal test acc: 0.712 and adv acc: 0.680 and epoch time :5.0932230949401855 seconds 
+
+Epoch: 6, Train Loss: 0.799 Train Acc: 0.721 Val Loss: 0.651 Val Acc: 0.766 and normal test acc: 0.748 and adv acc: 0.704 and epoch time :4.964609861373901 seconds 
+
+Epoch: 7, Train Loss: 0.747 Train Acc: 0.741 Val Loss: 0.613 Val Acc: 0.782 and normal test acc: 0.756 and adv acc: 0.722 and epoch time :4.861451864242554 seconds 
+
+Epoch: 8, Train Loss: 0.700 Train Acc: 0.757 Val Loss: 0.560 Val Acc: 0.802 and normal test acc: 0.768 and adv acc: 0.720 and epoch time :4.9738476276397705 seconds 
+
+Epoch: 9, Train Loss: 0.660 Train Acc: 0.771 Val Loss: 0.599 Val Acc: 0.791 and normal test acc: 0.762 and adv acc: 0.730 and epoch time :27.494033813476562 seconds 
+
+Epoch: 10, Train Loss: 0.616 Train Acc: 0.785 Val Loss: 0.539 Val Acc: 0.809 and normal test acc: 0.774 and adv acc: 0.706 and epoch time :4.633319139480591 seconds 
+
+Epoch: 11, Train Loss: 0.592 Train Acc: 0.794 Val Loss: 0.502 Val Acc: 0.829 and normal test acc: 0.790 and adv acc: 0.742 and epoch time :4.671385288238525 seconds 
+
+Epoch: 12, Train Loss: 0.563 Train Acc: 0.807 Val Loss: 0.580 Val Acc: 0.799 and normal test acc: 0.765 and adv acc: 0.692 and epoch time :4.583779335021973 seconds 
+
+Epoch: 13, Train Loss: 0.542 Train Acc: 0.812 Val Loss: 0.443 Val Acc: 0.852 and normal test acc: 0.803 and adv acc: 0.740 and epoch time :4.7343504428863525 seconds 
+
+Epoch: 14, Train Loss: 0.519 Train Acc: 0.821 Val Loss: 0.468 Val Acc: 0.836 and normal test acc: 0.791 and adv acc: 0.712 and epoch time :4.378751754760742 seconds 
+
+Epoch: 15, Train Loss: 0.504 Train Acc: 0.827 Val Loss: 0.413 Val Acc: 0.862 and normal test acc: 0.811 and adv acc: 0.752 and epoch time :4.465751886367798 seconds 
+
+Epoch: 16, Train Loss: 0.480 Train Acc: 0.834 Val Loss: 0.489 Val Acc: 0.833 and normal test acc: 0.787 and adv acc: 0.726 and epoch time :4.358591318130493 seconds 
+
+Epoch: 17, Train Loss: 0.464 Train Acc: 0.843 Val Loss: 0.384 Val Acc: 0.872 and normal test acc: 0.816 and adv acc: 0.758 and epoch time :4.983782768249512 seconds 
+
+Epoch: 18, Train Loss: 0.456 Train Acc: 0.843 Val Loss: 0.434 Val Acc: 0.853 and normal test acc: 0.807 and adv acc: 0.726 and epoch time :4.966852188110352 seconds 
+
+Epoch: 19, Train Loss: 0.438 Train Acc: 0.848 Val Loss: 0.397 Val Acc: 0.873 and normal test acc: 0.810 and adv acc: 0.754 and epoch time :4.357407093048096 seconds 
+
+Epoch: 20, Train Loss: 0.422 Train Acc: 0.854 Val Loss: 0.437 Val Acc: 0.857 and normal test acc: 0.795 and adv acc: 0.706 and epoch time :4.646252870559692 seconds 
+
+Epoch: 21, Train Loss: 0.409 Train Acc: 0.861 Val Loss: 0.405 Val Acc: 0.869 and normal test acc: 0.806 and adv acc: 0.772 and epoch time :4.702981948852539 seconds 
+
+Epoch: 22, Train Loss: 0.401 Train Acc: 0.862 Val Loss: 0.441 Val Acc: 0.854 and normal test acc: 0.798 and adv acc: 0.710 and epoch time :4.701315879821777 seconds 
+
+Best after loading the model adv : 0.7540000081062317Last after loading the model adv : 0.7099999785423279Last after loading the model adv : 0.7099999785423279

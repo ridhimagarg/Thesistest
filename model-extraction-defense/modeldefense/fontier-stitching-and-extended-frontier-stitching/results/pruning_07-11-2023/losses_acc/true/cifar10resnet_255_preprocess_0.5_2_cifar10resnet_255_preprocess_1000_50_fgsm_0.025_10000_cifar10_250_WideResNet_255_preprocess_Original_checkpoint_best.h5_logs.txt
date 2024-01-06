@@ -1,0 +1,12 @@
+Before Pruning:
+<<<<<<< HEAD
+Accuracy on watermark samples: 28.40000092983246
+Accuracy on test set: 36.66999936103821
+Finetuned model test acc: [4.107158184051514, 0.3517000079154968]
+Finetuned model watermark acc: [5.207247734069824, 0.25600001215934753]
+=======
+Accuracy on watermark samples: 31.94248080253601
+Accuracy on test set: 36.66999936103821
+Finetuned model test acc: [4.1086578369140625, 0.3515999913215637]
+Finetuned model watermark acc: [5.296897888183594, 0.24776048958301544]
+>>>>>>> 6f6621c1f (actual vm changes)

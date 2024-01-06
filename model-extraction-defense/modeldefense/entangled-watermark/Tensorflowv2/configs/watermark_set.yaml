@@ -1,0 +1,145 @@
+# dataset_name: mnist
+# ratio: 1
+# batch_size: 512
+# epochs: 10
+# w_epochs: 10
+# factors: [32,32,32]
+# temperatures: [1,1,1]
+# metric: cosine
+# threshold: 0.1
+# t_lr: 0.1
+# w_lr: 0.01 #0.01
+# source: 1
+# target: 8 #7
+# maxiter: 10
+# distribution: out
+# trigger_set_from_model_path: models/original_06-10-2023/mnist_20_MNIST_l20.0/Original_checkpoint_best.h5
+# model_architecture: MNIST_l2_EWE
+
+# dataset_name: mnist
+# ratio: 1
+# batch_size: 512
+# epochs: 10
+# w_epochs: 10
+# factors: [32,32,32]
+# temperatures: [1,1,1]
+# metric: cosine
+# threshold: 0.1
+# t_lr: 0.1
+# w_lr: 0.01 #0.01
+# source: 1
+# target: 8 #7
+# maxiter: 10
+# distribution: in
+# trigger_set_from_model_path: models/original_06-10-2023/mnist_20_MNIST_l20.0/Original_checkpoint_best.h5
+# model_architecture: MNIST_l2_EWE
+
+
+
+dataset_name: mnist
+ratio: 1
+batch_size: 512
+epochs: 10
+w_epochs: 10
+factors: [32,32,32]
+temperatures: [1,1,1]
+metric: cosine
+threshold: 0.1
+t_lr: 0.1
+w_lr: 0.01
+source: 1
+target: 7
+maxiter: 10
+distribution: out_with_trigger #in
+trigger_set_from_model_path: models/original_06-10-2023/mnist_20_MNIST_l20.0/Original_checkpoint_best.h5
+model_architecture: MNIST_l2_EWE
+
+# dataset_name: mnist
+# ratio: 1
+# batch_size: 512
+# epochs: 10
+# w_epochs: 10
+# factors: [32,32,32]
+# temperatures: [1,1,1]
+# metric: cosine
+# threshold: 0.1
+# t_lr: 0.1
+# w_lr: 0.1
+# source: 4
+# target: 3
+# maxiter: 10
+# distribution: in
+# trigger_set_from_model_path: models/original_06-10-2023/mnist_20_MNIST_l20.0/Original_checkpoint_best.h5
+# model_architecture: MNIST_l2_EWE
+
+# dataset_name: cifar10
+# ratio: 1
+# batch_size: 512
+# epochs: 30
+# w_epochs: 6
+# factors: [1000,1000,1000]
+# temperatures: [1,1,1]
+# metric: cosine
+# threshold: 0.1
+# t_lr: 0.1
+# w_lr: 0.01 #0.01
+# source: 8
+# target: 0
+# maxiter: 10
+# distribution: out
+# trigger_set_from_model_path: models/original_16-10-2023/cifar10_30_CIFAR10_BASE_2/Original_checkpoint_best.h5
+# model_architecture: CIFAR10_BASE_2_EWE
+
+# dataset_name: cifar10
+# ratio: 1
+# batch_size: 512
+# epochs: 30
+# w_epochs: 6
+# factors: [1000,1000,1000]
+# temperatures: [1,1,1]
+# metric: cosine
+# threshold: 0.1
+# t_lr: 0.1
+# w_lr: 0.0085 #0.01
+# source: 8
+# target: 0
+# maxiter: 10
+# distribution: out
+# trigger_set_from_model_path: models/original_16-10-2023/cifar10_30_CIFAR10_BASE_2/Original_checkpoint_best.h5
+# model_architecture: CIFAR10_BASE_2_EWE
+
+# dataset_name: cifar10
+# ratio: 1
+# batch_size: 512
+# epochs: 30
+# w_epochs: 6
+# factors: [1000,1000,1000]
+# temperatures: [1,1,1]
+# metric: cosine
+# threshold: 0.1
+# t_lr: 0.1
+# w_lr: 0.0085 #0.01
+# source: 8
+# target: 0
+# maxiter: 10
+# distribution: in
+# trigger_set_from_model_path: models/original_16-10-2023/cifar10_30_CIFAR10_BASE_2/Original_checkpoint_best.h5
+# model_architecture: CIFAR10_BASE_2_EWE
+
+# dataset_name: cifar10
+# ratio: 1
+# batch_size: 512
+# epochs: 30
+# w_epochs: 6
+# factors: [1000,1000,1000]
+# temperatures: [1,1,1]
+# metric: cosine
+# threshold: 0.1
+# t_lr: 0.1
+# w_lr: 0.0085 #0.01
+# source: 9 ##0 digit
+# target: 5 ## dog
+# maxiter: 10
+# distribution: out
+# trigger_set_from_model_path: models/original_16-10-2023/cifar10_30_CIFAR10_BASE_2/Original_checkpoint_best.h5
+# model_architecture: CIFAR10_BASE_2_EWE

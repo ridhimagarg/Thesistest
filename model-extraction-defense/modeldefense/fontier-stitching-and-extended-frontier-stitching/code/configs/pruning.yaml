@@ -1,0 +1,36 @@
+# dataset: mnist
+# attacker_model_path: ../models/attack_finetuned22-09-2023/true/mnist_10000_50_fgsm_0.25_10000_mnist_20_MNIST_l20.0_Original_checkpoint_best.h5
+# model_finetune_name: mnist_l2_prune #[resnet34, conv_2]
+# dropout: 0
+# epochs_pruning: 10 # 10
+# optimizer: adam # sgd
+# lr: 0.001
+# weight_decay: 0
+# adv_key_set_path: ../data/fgsm/mnist/true/fgsm_0.25_10000_mnist_20_MNIST_l20.0_Original_checkpoint_best.npz
+# batch_size: 128
+# pruning_levels: [0.01, 0.05, 0.1, 0.25, 0.4, 0.5, 0.75, 0.9]
+
+#dataset: cifar10
+#attacker_model_path: ../models/attack_finetuned02-09-2023/true/cifar10_10000_50_fgsm_0.035_10000_cifar10_30_CIFAR10_BASE_2_Original_checkpoint_best.h5
+#model_finetune_name: CIFAR10_BASE_2_Prune #[resnet34, conv_2]
+#dropout: 0
+#epochs_pruning: 10
+#optimizer: adam # sgd
+#lr: 0.001
+#weight_decay: 0
+#adv_key_set_path: ../data/fgsm/cifar10/true/fgsm_0.035_10000_cifar10_30_CIFAR10_BASE_2_Original_checkpoint_best.npz
+#batch_size: 128
+#pruning_levels: [0.01, 0.05, 0.1, 0.25, 0.4, 0.5, 0.75, 0.9]
+
+dataset: cifar10resnet_255_preprocess
+attacker_model_path: ../models/attack_finetuned06-11-2023/true/cifar10resnet_255_preprocess_10000_50_fgsm_0.025_10000_cifar10_250_WideResNet_255_preprocess_Original_checkpoint_best.h5
+model_finetune_name: cifar10_wideresnet_prune #[resnet34, conv_2]
+dropout: 0
+epochs_pruning: 10 # 10
+optimizer: adam # sgd
+lr: 0.001
+weight_decay: 0
+adv_key_set_path: ../data/fgsm/cifar10/true/fgsm_0.035_10000_cifar10_30_CIFAR10_BASE_2_Original_checkpoint_best.npz
+batch_size: 128
+pruning_levels: [0.01, 0.05, 0.1, 0.25, 0.4, 0.5, 0.75, 0.9]
+

@@ -1,0 +1,133 @@
+# out distribution reatrining
+
+# dataset_name: mnist
+# batch_size: 128
+# epochs_extract: 10
+# lr: 0.001
+# source: 1
+# target: 7
+# dropout: 0
+# optimizer: adam
+# weight_decay: 0
+# trigger_set_path: data/fgsm/mnistMNIST_l2_EWE/out/7/fgsm_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_trigger.npz
+# target_set_path: data/fgsm/mnistMNIST_l2_EWE/out/7/target_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_target.npz
+# model_to_attack: models/ewe_training_retrain14-10-2023/7_source_1_distrib_outMNIST_l2_EWE/ewe_model.h5 #models/ewe_training_06-10-2023/mnist_20_MNIST_l20.0Original_checkpoint_best.h5
+# attacker_model_architecture: MNIST_Plain_2_conv_real_stealing #MNIST_Plain_2_conv
+
+# out distribution retraining
+
+# dataset_name: mnist
+# batch_size: 128
+# epochs_extract: 10
+# lr: 0.001
+# source: 1
+# target: 8
+# dropout: 0
+# optimizer: adam
+# weight_decay: 0
+# trigger_set_path: data/fgsm/mnistMNIST_l2_EWE/out/81/fgsm_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_trigger.npz
+# target_set_path: data/fgsm/mnistMNIST_l2_EWE/out/81/target_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_target.npz
+# model_to_attack: models/ewe_training_retrain22-10-2023/8_source_1_distrib_outMNIST_l2_EWE/ewe_model.h5 #models/ewe_training_06-10-2023/mnist_20_MNIST_l20.0Original_checkpoint_best.h5
+# attacker_model_architecture: MNIST_Plain_2_conv_real_stealing #MNIST_Plain_2_conv
+
+# in distribution reatraining
+
+dataset_name: mnist
+batch_size: 128
+epochs_extract: 10
+lr: 0.001
+source: 1
+target: 7
+dropout: 0
+optimizer: adam
+weight_decay: 0
+trigger_set_path: data/fgsm/mnistMNIST_l2_EWE/in/71/fgsm_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_trigger.npz
+target_set_path: data/fgsm/mnistMNIST_l2_EWE/in/71/target_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_target.npz
+model_to_attack: models/ewe_training_retrain23-10-2023/7_source_1_distrib_inMNIST_l2_EWE/ewe_model.h5 #models/ewe_training_retrain22-10-2023/8_source_1_distrib_inMNIST_l2_EWE/ewe_model.h5 #models/ewe_training_06-10-2023/mnist_20_MNIST_l20.0Original_checkpoint_best.h5
+attacker_model_architecture: MNIST_Plain_2_conv_real_stealing 
+probability: False
+#MNIST_Plain_2_conv
+
+
+
+## in distribution retraining
+
+# dataset_name: mnist
+# batch_size: 128
+# epochs_extract: 10
+# lr: 0.001
+# source: 4
+# target: 3
+# dropout: 0
+# optimizer: adam
+# weight_decay: 0
+# trigger_set_path: data/fgsm/mnistMNIST_l2_EWE/in/3/fgsm_0.1original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_trigger.npz
+# target_set_path: data/fgsm/mnistMNIST_l2_EWE/in/3/target_0.1original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_target.npz
+# model_to_attack:  models/ewe_training_retrain15-10-2023/3_source_4_distrib_inMNIST_l2_EWE/ewe_model.h5 
+# attacker_model_architecture: MNIST_Plain_2_conv_real_stealing #MNIST_Plain_2_conv
+
+## in distribution finetuning
+
+# dataset_name: mnist
+# batch_size: 128
+# epochs_extract: 10
+# lr: 0.001
+# source: 4
+# target: 3
+# dropout: 0
+# optimizer: adam
+# weight_decay: 0
+# trigger_set_path: data/fgsm/mnistMNIST_l2_EWE/in/3/fgsm_0.1original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_trigger.npz
+# target_set_path: data/fgsm/mnistMNIST_l2_EWE/in/3/target_0.1original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_target.npz
+# model_to_attack:  models/ewe_training_finetune16-10-2023/3_source_4_distrib_inmnist_20_MNIST_l20.0Original_checkpoint_best/ewe_model.h5 
+# attacker_model_architecture: MNIST_Plain_2_conv_real_stealing #MNIST_Plain_2_conv
+
+
+## out distribution finetuning
+
+# dataset_name: mnist
+# batch_size: 128
+# epochs_extract: 10
+# lr: 0.001
+# source: 1
+# target: 7
+# dropout: 0
+# optimizer: adam
+# weight_decay: 0
+# trigger_set_path: data/fgsm/mnistMNIST_l2_EWE/out/7/fgsm_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_trigger.npz
+# target_set_path: data/fgsm/mnistMNIST_l2_EWE/out/7/target_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_target.npz
+# model_to_attack: models/ewe_training_finetune15-10-2023/7_source_1_distrib_outmnist_20_MNIST_l20.0Original_checkpoint_best/ewe_model.h5
+# attacker_model_architecture: MNIST_Plain_2_conv_real_stealing #MNIST_Plain_2_conv
+
+##-------------------------- cifar ----------------##
+
+# dataset_name: cifar10
+# batch_size: 128
+# epochs_extract: 30
+# lr: 0.001
+# source: 8
+# target: 0
+# dropout: 0
+# optimizer: adam
+# weight_decay: 0
+# trigger_set_path: data/fgsm/cifar10CIFAR10_BASE_2_EWE/out/0/fgsm_0.0085original_16-10-2023cifar10_30_CIFAR10_BASE_2Original_checkpoint_best.h5_trigger.npz
+# target_set_path: data/fgsm/cifar10CIFAR10_BASE_2_EWE/out/0/target_0.0085original_16-10-2023cifar10_30_CIFAR10_BASE_2Original_checkpoint_best.h5_target.npz
+# model_to_attack: models/ewe_training_retrain16-10-2023/0_source_8_distrib_outCIFAR10_BASE_2_EWE/ewe_model.h5
+# attacker_model_architecture: CIFAR10_BASE_2 
+
+# dataset_name: cifar10
+# batch_size: 128
+# epochs_extract: 30
+# lr: 0.001
+# source: 9
+# target: 5
+# dropout: 0
+# optimizer: adam
+# weight_decay: 0
+# trigger_set_path: data/fgsm/cifar10CIFAR10_BASE_2_EWE/out/59/fgsm_0.0085original_16-10-2023cifar10_30_CIFAR10_BASE_2Original_checkpoint_best.h5_trigger.npz
+# target_set_path: data/fgsm/cifar10CIFAR10_BASE_2_EWE/out/59/target_0.0085original_16-10-2023cifar10_30_CIFAR10_BASE_2Original_checkpoint_best.h5_target.npz
+# model_to_attack: models/ewe_training_retrain19-10-2023/5_source_9_distrib_outCIFAR10_BASE_2_EWE/ewe_model.h5
+# attacker_model_architecture: CIFAR10_BASE_2 
+
+
+

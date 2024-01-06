@@ -1,0 +1,30 @@
+# dataset_name: CIFAR10
+# epochs_extract: 50 #(with 10 and 50)
+# victim_model_architecture: CIFAR10_BASE_2
+# attacker_model_architecture: CIFAR10_BASE_2  #[cifar10_base_2, conv_2]
+# optimizer: adam # sgd
+# lr: 0.01
+# weight_decay: 0
+# dropout: 0
+# model_to_attack_path: ../models/original_18-09-2023/CIFAR10_BASE_2_victim_cifar_base_2.pt
+
+# dataset_name: MNIST
+# epochs_extract: 50 #(with 10 and 50)
+# victim_model_architecture: MNIST_L2_DRP03
+# attacker_model_architecture: MNIST_L5_DRP03  #[cifar10_base_2, conv_2]
+# optimizer: adam # sgd
+# lr: 0.01
+# weight_decay: 0
+# dropout: 0
+# model_to_attack_path: ../models/original_25-09-2023/MNIST_L2_DRP03_victim_mnist_l2.pt
+
+dataset_name: CIFAR10
+epochs_extract: 50 #(with 10 and 50)
+victim_model_architecture: RN34
+attacker_model_architecture: RN34  #[cifar10_base_2, conv_2]
+optimizer: adam # sgd
+lr: 0.01
+weight_decay: 0
+dropout: 0
+model_to_attack_path: ../models/victim_cifar_rn34.pt
+normalize_with_imagenet: 1

@@ -1,0 +1,101 @@
+Total training time: 243.0360724925995 seconds
+Finetuned model test acc: [0.533198893070221, 0.8436999917030334] 
+Finetuned model train adv acc: [0.33730006217956543, 0.8956246972084045]
+Finetuned model test adv acc: [0.6584459543228149, 0.8341231942176819]
+Epoch: 1, Train Loss: 1.854 Train Acc: 0.374 Val Loss: 2.893 Val Acc: 0.227 and normal test acc: 0.219 and adv acc: 0.126 and epoch time :6.168305397033691 seconds 
+
+Epoch: 2, Train Loss: 1.303 Train Acc: 0.533 Val Loss: 1.197 Val Acc: 0.565 and normal test acc: 0.567 and adv acc: 0.525 and epoch time :4.728718042373657 seconds 
+
+Epoch: 3, Train Loss: 1.099 Train Acc: 0.611 Val Loss: 1.052 Val Acc: 0.622 and normal test acc: 0.622 and adv acc: 0.510 and epoch time :5.0455615520477295 seconds 
+
+Epoch: 4, Train Loss: 0.981 Train Acc: 0.653 Val Loss: 0.913 Val Acc: 0.682 and normal test acc: 0.670 and adv acc: 0.519 and epoch time :4.681974649429321 seconds 
+
+Epoch: 5, Train Loss: 0.901 Train Acc: 0.685 Val Loss: 0.948 Val Acc: 0.664 and normal test acc: 0.655 and adv acc: 0.530 and epoch time :4.691585302352905 seconds 
+
+Epoch: 6, Train Loss: 0.826 Train Acc: 0.713 Val Loss: 0.705 Val Acc: 0.748 and normal test acc: 0.743 and adv acc: 0.546 and epoch time :4.6714324951171875 seconds 
+
+Epoch: 7, Train Loss: 0.763 Train Acc: 0.734 Val Loss: 0.726 Val Acc: 0.743 and normal test acc: 0.730 and adv acc: 0.541 and epoch time :4.8799192905426025 seconds 
+
+Epoch: 8, Train Loss: 0.726 Train Acc: 0.748 Val Loss: 0.637 Val Acc: 0.770 and normal test acc: 0.764 and adv acc: 0.567 and epoch time :5.166852235794067 seconds 
+
+Epoch: 9, Train Loss: 0.683 Train Acc: 0.762 Val Loss: 0.644 Val Acc: 0.774 and normal test acc: 0.757 and adv acc: 0.498 and epoch time :5.450446605682373 seconds 
+
+Epoch: 10, Train Loss: 0.655 Train Acc: 0.772 Val Loss: 0.585 Val Acc: 0.793 and normal test acc: 0.775 and adv acc: 0.592 and epoch time :5.547840595245361 seconds 
+
+Epoch: 11, Train Loss: 0.623 Train Acc: 0.786 Val Loss: 0.553 Val Acc: 0.809 and normal test acc: 0.779 and adv acc: 0.581 and epoch time :5.395996332168579 seconds 
+
+Epoch: 12, Train Loss: 0.595 Train Acc: 0.796 Val Loss: 0.549 Val Acc: 0.808 and normal test acc: 0.788 and adv acc: 0.560 and epoch time :5.238752365112305 seconds 
+
+Epoch: 13, Train Loss: 0.564 Train Acc: 0.808 Val Loss: 0.538 Val Acc: 0.816 and normal test acc: 0.781 and adv acc: 0.613 and epoch time :5.090178966522217 seconds 
+
+Epoch: 14, Train Loss: 0.547 Train Acc: 0.812 Val Loss: 0.540 Val Acc: 0.815 and normal test acc: 0.776 and adv acc: 0.626 and epoch time :5.162897348403931 seconds 
+
+Epoch: 15, Train Loss: 0.527 Train Acc: 0.819 Val Loss: 0.559 Val Acc: 0.810 and normal test acc: 0.785 and adv acc: 0.571 and epoch time :5.142688035964966 seconds 
+
+Epoch: 16, Train Loss: 0.506 Train Acc: 0.826 Val Loss: 0.461 Val Acc: 0.845 and normal test acc: 0.799 and adv acc: 0.652 and epoch time :4.880805253982544 seconds 
+
+Epoch: 17, Train Loss: 0.498 Train Acc: 0.829 Val Loss: 0.487 Val Acc: 0.833 and normal test acc: 0.796 and adv acc: 0.645 and epoch time :5.066749095916748 seconds 
+
+Epoch: 18, Train Loss: 0.476 Train Acc: 0.836 Val Loss: 0.423 Val Acc: 0.852 and normal test acc: 0.812 and adv acc: 0.683 and epoch time :5.124419212341309 seconds 
+
+Epoch: 19, Train Loss: 0.461 Train Acc: 0.841 Val Loss: 0.460 Val Acc: 0.848 and normal test acc: 0.799 and adv acc: 0.669 and epoch time :4.895825147628784 seconds 
+
+Epoch: 20, Train Loss: 0.452 Train Acc: 0.847 Val Loss: 0.434 Val Acc: 0.857 and normal test acc: 0.810 and adv acc: 0.659 and epoch time :5.000320911407471 seconds 
+
+Epoch: 21, Train Loss: 0.439 Train Acc: 0.848 Val Loss: 0.417 Val Acc: 0.855 and normal test acc: 0.811 and adv acc: 0.631 and epoch time :5.293951511383057 seconds 
+
+Epoch: 22, Train Loss: 0.429 Train Acc: 0.852 Val Loss: 0.377 Val Acc: 0.874 and normal test acc: 0.826 and adv acc: 0.694 and epoch time :5.257019758224487 seconds 
+
+Epoch: 23, Train Loss: 0.416 Train Acc: 0.854 Val Loss: 0.428 Val Acc: 0.861 and normal test acc: 0.814 and adv acc: 0.661 and epoch time :5.276537895202637 seconds 
+
+Epoch: 24, Train Loss: 0.402 Train Acc: 0.861 Val Loss: 0.360 Val Acc: 0.882 and normal test acc: 0.827 and adv acc: 0.693 and epoch time :5.412435293197632 seconds 
+
+Epoch: 25, Train Loss: 0.398 Train Acc: 0.863 Val Loss: 0.368 Val Acc: 0.875 and normal test acc: 0.824 and adv acc: 0.686 and epoch time :4.950525522232056 seconds 
+
+Epoch: 26, Train Loss: 0.390 Train Acc: 0.867 Val Loss: 0.353 Val Acc: 0.886 and normal test acc: 0.829 and adv acc: 0.698 and epoch time :5.395655632019043 seconds 
+
+Epoch: 27, Train Loss: 0.377 Train Acc: 0.869 Val Loss: 0.334 Val Acc: 0.892 and normal test acc: 0.835 and adv acc: 0.656 and epoch time :4.886394023895264 seconds 
+
+Epoch: 28, Train Loss: 0.372 Train Acc: 0.873 Val Loss: 0.366 Val Acc: 0.883 and normal test acc: 0.822 and adv acc: 0.680 and epoch time :4.973928213119507 seconds 
+
+Epoch: 29, Train Loss: 0.367 Train Acc: 0.874 Val Loss: 0.398 Val Acc: 0.870 and normal test acc: 0.814 and adv acc: 0.699 and epoch time :4.697556734085083 seconds 
+
+Epoch: 30, Train Loss: 0.360 Train Acc: 0.876 Val Loss: 0.355 Val Acc: 0.888 and normal test acc: 0.824 and adv acc: 0.697 and epoch time :5.007011890411377 seconds 
+
+Epoch: 31, Train Loss: 0.355 Train Acc: 0.877 Val Loss: 0.337 Val Acc: 0.894 and normal test acc: 0.833 and adv acc: 0.691 and epoch time :5.290461301803589 seconds 
+
+Epoch: 32, Train Loss: 0.351 Train Acc: 0.880 Val Loss: 0.301 Val Acc: 0.904 and normal test acc: 0.842 and adv acc: 0.751 and epoch time :5.215851068496704 seconds 
+
+Epoch: 33, Train Loss: 0.339 Train Acc: 0.882 Val Loss: 0.310 Val Acc: 0.899 and normal test acc: 0.837 and adv acc: 0.754 and epoch time :4.612874507904053 seconds 
+
+Epoch: 34, Train Loss: 0.339 Train Acc: 0.884 Val Loss: 0.305 Val Acc: 0.902 and normal test acc: 0.840 and adv acc: 0.752 and epoch time :4.970171213150024 seconds 
+
+Epoch: 35, Train Loss: 0.333 Train Acc: 0.884 Val Loss: 0.327 Val Acc: 0.893 and normal test acc: 0.834 and adv acc: 0.715 and epoch time :5.162271976470947 seconds 
+
+Epoch: 36, Train Loss: 0.327 Train Acc: 0.889 Val Loss: 0.294 Val Acc: 0.907 and normal test acc: 0.837 and adv acc: 0.723 and epoch time :5.486106872558594 seconds 
+
+Epoch: 37, Train Loss: 0.319 Train Acc: 0.889 Val Loss: 0.313 Val Acc: 0.906 and normal test acc: 0.833 and adv acc: 0.745 and epoch time :5.249876976013184 seconds 
+
+Epoch: 38, Train Loss: 0.316 Train Acc: 0.890 Val Loss: 0.291 Val Acc: 0.906 and normal test acc: 0.839 and adv acc: 0.753 and epoch time :5.15059494972229 seconds 
+
+Epoch: 39, Train Loss: 0.314 Train Acc: 0.892 Val Loss: 0.308 Val Acc: 0.905 and normal test acc: 0.840 and adv acc: 0.703 and epoch time :4.819787979125977 seconds 
+
+Epoch: 40, Train Loss: 0.307 Train Acc: 0.894 Val Loss: 0.293 Val Acc: 0.910 and normal test acc: 0.840 and adv acc: 0.745 and epoch time :4.39988112449646 seconds 
+
+Epoch: 41, Train Loss: 0.300 Train Acc: 0.896 Val Loss: 0.276 Val Acc: 0.917 and normal test acc: 0.845 and adv acc: 0.722 and epoch time :4.762312650680542 seconds 
+
+Epoch: 42, Train Loss: 0.297 Train Acc: 0.900 Val Loss: 0.307 Val Acc: 0.906 and normal test acc: 0.835 and adv acc: 0.740 and epoch time :4.617616653442383 seconds 
+
+Epoch: 43, Train Loss: 0.299 Train Acc: 0.898 Val Loss: 0.265 Val Acc: 0.922 and normal test acc: 0.844 and adv acc: 0.773 and epoch time :5.393330812454224 seconds 
+
+Epoch: 44, Train Loss: 0.294 Train Acc: 0.898 Val Loss: 0.267 Val Acc: 0.915 and normal test acc: 0.847 and adv acc: 0.782 and epoch time :5.180269479751587 seconds 
+
+Epoch: 45, Train Loss: 0.296 Train Acc: 0.898 Val Loss: 0.288 Val Acc: 0.914 and normal test acc: 0.834 and adv acc: 0.769 and epoch time :5.056267023086548 seconds 
+
+Epoch: 46, Train Loss: 0.284 Train Acc: 0.903 Val Loss: 0.269 Val Acc: 0.920 and normal test acc: 0.847 and adv acc: 0.788 and epoch time :4.66931939125061 seconds 
+
+Epoch: 47, Train Loss: 0.281 Train Acc: 0.903 Val Loss: 0.274 Val Acc: 0.918 and normal test acc: 0.845 and adv acc: 0.776 and epoch time :4.889143466949463 seconds 
+
+Epoch: 48, Train Loss: 0.276 Train Acc: 0.906 Val Loss: 0.277 Val Acc: 0.915 and normal test acc: 0.844 and adv acc: 0.781 and epoch time :4.828967809677124 seconds 
+
+Best after loading the model adv : 0.7727704048156738Last after loading the model adv : 0.7808349132537842Last after loading the model adv : 0.7808349132537842

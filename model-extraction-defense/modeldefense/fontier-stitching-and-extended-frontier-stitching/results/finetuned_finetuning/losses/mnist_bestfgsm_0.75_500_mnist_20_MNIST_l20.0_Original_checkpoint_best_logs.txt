@@ -1,0 +1,5 @@
+Finetuned model test acc: [0.029522310942411423, 0.9908999800682068] 
+Finetuned model train adv acc: [13.704883575439453, 0.046666666865348816]
+Finetuned model test adv acc: [14.935385704040527, 0.0]
+Epoch: 1, Train Loss: 13.594 Train Acc: 0.044 Val Loss: 14.703 Val Acc: 0.067
+After loading the model adv : 0.024000000208616257

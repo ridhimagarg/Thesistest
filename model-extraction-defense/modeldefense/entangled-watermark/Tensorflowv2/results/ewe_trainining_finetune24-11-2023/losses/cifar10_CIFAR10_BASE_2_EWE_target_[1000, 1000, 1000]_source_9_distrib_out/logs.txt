@@ -1,0 +1,6 @@
+Parmeters:
+Ratio: 6
+Factors: 1
+Temperatures: 0.1
+Triggerset: data/fgsm/cifar10CIFAR10_BASE_2_EWE/out/95/fgsm_0.0085original_16-10-2023cifar10_30_CIFAR10_BASE_2Original_checkpoint_best.h5_trigger.npz
+Targetset: data/fgsm/cifar10CIFAR10_BASE_2_EWE/out/95/target_0.0085original_16-10-2023cifar10_30_CIFAR10_BASE_2Original_checkpoint_best.h5_target.npz

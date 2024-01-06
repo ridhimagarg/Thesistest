@@ -1,0 +1,33 @@
+
+Loaded EWE trained model models/ewe_training_retrain15-10-2023/3_source_4_distrib_inMNIST_l2_EWE/ewe_model.h5 test accuracy 0.9781939350068569
+
+Loaded EWE trained model models/ewe_training_retrain15-10-2023/3_source_4_distrib_inMNIST_l2_EWE/ewe_model.h5 watermark accuracy 1.0
+
+Params
+Trigger set: data/fgsm/mnistMNIST_l2_EWE/in/3/fgsm_0.1original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_trigger.npz 
+Target set: data/fgsm/mnistMNIST_l2_EWE/in/3/target_0.1original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_target.npz 
+
+Loss of train set at epoch 0 is 0.4488309323787689
+Loss of train set at epoch 1 is 0.09123741835355759
+Loss of train set at epoch 2 is 0.05955444276332855
+Loss of train set at epoch 3 is 0.04717579111456871
+Loss of train set at epoch 4 is 0.03779558092355728
+Loss of train set at epoch 5 is 0.030527684837579727
+Loss of train set at epoch 6 is 0.027773186564445496
+Loss of train set at epoch 7 is 0.022665884345769882
+Loss of train set at epoch 8 is 0.019879164174199104
+Loss of train set at epoch 9 is 0.0158291794359684
+Loss of train set at epoch 10 is 0.014041668735444546
+Loss of train set at epoch 11 is 0.012299885042011738
+Loss of train set at epoch 12 is 0.01048596203327179
+Loss of train set at epoch 13 is 0.009913967922329903
+Loss of train set at epoch 14 is 0.007694404572248459
+Loss of train set at epoch 15 is 0.006675420794636011
+Loss of train set at epoch 16 is 0.005918323062360287
+Loss of train set at epoch 17 is 0.006114261690527201
+Loss of train set at epoch 18 is 0.005318011622875929
+Loss of train set at epoch 19 is 0.004334624391049147
+
+Test accuracy 0.9808191638439894
+
+Watermark accuracy 0.6028397679328918

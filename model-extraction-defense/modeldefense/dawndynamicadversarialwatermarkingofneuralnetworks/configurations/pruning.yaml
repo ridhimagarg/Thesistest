@@ -1,0 +1,55 @@
+# dataset: MNIST
+# attacker_model_path: ../models/attack_original_26-09-2023/model_argmax_knockoffNets_MNIST_10000.model
+# model_finetune_name: MNIST_L2_DRP03 #[resnet34, conv_2]
+# dropout: 0
+# epochs_pruning: 50
+# optimizer: adam # sgd
+# lr: 0.001
+# weight_decay: 0
+# test_set_path: ../data/test_set/MNIST/test_set.npz
+# watermark_path: ../data/watermark_set/MNIST/watermark_set_250.npz
+# batch_size: 128
+
+# dataset: CIFAR10
+<<<<<<< HEAD
+# attacker_model_path: ../models/attack_original_01-10-2023/model_argmax_knockoffNets_CIFAR10_10000_CIFAR10_BASE_2.pt
+# model_finetune_name: CIFAR10_BASE_2 #[resnet34, conv_2]
+# dropout: 0
+# epochs_pruning: 10
+=======
+# attacker_model_path: ../models/attack_original_01-10-2023/model_argmax_knockoffNets_CIFAR10_1000_CIFAR10_BASE_2.pt
+# model_finetune_name: CIFAR10_BASE_2 #[resnet34, conv_2]
+# dropout: 0
+# epochs_pruning: 25
+>>>>>>> 6f6621c1f (actual vm changes)
+# optimizer: adam # sgd
+# lr: 0.001
+# weight_decay: 0
+# test_set_path: ../data/test_set/CIFAR10/test_set.npz
+<<<<<<< HEAD
+# watermark_path: ../data/watermark_set/CIFAR10/watermark_set_250.npz
+# batch_size: 128
+
+dataset: CIFAR10
+attacker_model_path: ../models/attack_original_07-11-2023/model_argmax_knockoffNets_CIFAR10_250_CIFAR10_BASE_2.pt
+model_finetune_name: CIFAR10_BASE_2 #[resnet34, conv_2]
+=======
+# watermark_path: ../data/watermark_set/CIFAR10/watermark_set_100.npz
+# batch_size: 128
+
+dataset: CIFAR10
+attacker_model_path: ../models/attack_original_07-11-2023/model_argmax_knockoffNets_CIFAR10_10000_RN34.pt
+model_finetune_name: RN34 #[resnet34, conv_2]
+>>>>>>> 6f6621c1f (actual vm changes)
+dropout: 0
+epochs_pruning: 10
+optimizer: adam # sgd
+lr: 0.001
+weight_decay: 0
+test_set_path: ../data/test_set/CIFAR10/test_set.npz
+<<<<<<< HEAD
+watermark_path: ../data/watermark_set/CIFAR10/watermark_set_50.npz
+=======
+watermark_path: ../data/watermark_set/CIFAR10/1_watermark_set_250.npz
+>>>>>>> 6f6621c1f (actual vm changes)
+batch_size: 128

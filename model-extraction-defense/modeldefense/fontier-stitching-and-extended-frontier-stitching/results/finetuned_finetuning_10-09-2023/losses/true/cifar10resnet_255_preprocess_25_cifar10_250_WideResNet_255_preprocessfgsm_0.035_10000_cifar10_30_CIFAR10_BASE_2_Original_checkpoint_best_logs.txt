@@ -1,0 +1,54 @@
+Loaded model test acc: 0.9605000019073486 
+Finetuned model test acc: [2.3490281105041504, 0.57669997215271] 
+Finetuned model train adv acc: [0.6664239168167114, 0.9657777547836304]
+Finetuned model test adv acc: [0.9248500466346741, 0.8960000276565552]
+Epoch: 1, Train Loss: 1.204 Train Acc: 0.771 Val Loss: 1.312 Val Acc: 0.766 with lr: 0.0000000 and normal test acc: 0.927
+
+Epoch: 2, Train Loss: 0.461 Train Acc: 0.898 Val Loss: 0.355 Val Acc: 0.927 with lr: 0.0001000 and normal test acc: 0.882
+
+Epoch: 3, Train Loss: 0.170 Train Acc: 0.984 Val Loss: 0.303 Val Acc: 0.949 with lr: 0.0002000 and normal test acc: 0.898
+
+Epoch: 4, Train Loss: 0.123 Train Acc: 0.999 Val Loss: 0.290 Val Acc: 0.953 with lr: 0.0003000 and normal test acc: 0.909
+
+Epoch: 5, Train Loss: 0.117 Train Acc: 1.000 Val Loss: 0.282 Val Acc: 0.954 with lr: 0.0004000 and normal test acc: 0.911
+
+Epoch: 6, Train Loss: 0.134 Train Acc: 0.996 Val Loss: 0.595 Val Acc: 0.887 with lr: 0.0005000 and normal test acc: 0.824
+
+Epoch: 7, Train Loss: 0.671 Train Acc: 0.835 Val Loss: 2.136 Val Acc: 0.603 with lr: 0.0006000 and normal test acc: 0.561
+
+Epoch: 8, Train Loss: 0.509 Train Acc: 0.895 Val Loss: 0.839 Val Acc: 0.810 with lr: 0.0007000 and normal test acc: 0.699
+
+Epoch: 9, Train Loss: 0.545 Train Acc: 0.899 Val Loss: 0.878 Val Acc: 0.811 with lr: 0.0008000 and normal test acc: 0.653
+
+Epoch: 10, Train Loss: 0.447 Train Acc: 0.946 Val Loss: 0.944 Val Acc: 0.802 with lr: 0.0009000 and normal test acc: 0.612
+
+Epoch: 11, Train Loss: 0.530 Train Acc: 0.924 Val Loss: 1.029 Val Acc: 0.789 with lr: 0.0010000 and normal test acc: 0.627
+
+Epoch: 12, Train Loss: 0.500 Train Acc: 0.950 Val Loss: 0.798 Val Acc: 0.870 with lr: 0.0011000 and normal test acc: 0.629
+
+Epoch: 13, Train Loss: 0.489 Train Acc: 0.961 Val Loss: 0.792 Val Acc: 0.872 with lr: 0.0012000 and normal test acc: 0.642
+
+Epoch: 14, Train Loss: 0.435 Train Acc: 0.982 Val Loss: 0.739 Val Acc: 0.890 with lr: 0.0013000 and normal test acc: 0.674
+
+Epoch: 15, Train Loss: 0.439 Train Acc: 0.981 Val Loss: 0.824 Val Acc: 0.878 with lr: 0.0014000 and normal test acc: 0.646
+
+Epoch: 16, Train Loss: 0.595 Train Acc: 0.938 Val Loss: 1.562 Val Acc: 0.753 with lr: 0.0015000 and normal test acc: 0.574
+
+Epoch: 17, Train Loss: 0.770 Train Acc: 0.909 Val Loss: 1.236 Val Acc: 0.791 with lr: 0.0016000 and normal test acc: 0.587
+
+Epoch: 18, Train Loss: 0.641 Train Acc: 0.971 Val Loss: 1.052 Val Acc: 0.857 with lr: 0.0017000 and normal test acc: 0.597
+
+Epoch: 19, Train Loss: 0.591 Train Acc: 0.983 Val Loss: 1.051 Val Acc: 0.847 with lr: 0.0018000 and normal test acc: 0.580
+
+Epoch: 20, Train Loss: 0.625 Train Acc: 0.969 Val Loss: 1.328 Val Acc: 0.799 with lr: 0.0019000 and normal test acc: 0.532
+
+Epoch: 21, Train Loss: 0.640 Train Acc: 0.970 Val Loss: 1.169 Val Acc: 0.832 with lr: 0.0020000 and normal test acc: 0.511
+
+Epoch: 22, Train Loss: 0.601 Train Acc: 0.983 Val Loss: 0.935 Val Acc: 0.893 with lr: 0.0000000 and normal test acc: 0.585
+
+Epoch: 23, Train Loss: 0.606 Train Acc: 0.981 Val Loss: 0.927 Val Acc: 0.896 with lr: 0.0000000 and normal test acc: 0.583
+
+Epoch: 24, Train Loss: 0.604 Train Acc: 0.982 Val Loss: 0.929 Val Acc: 0.891 with lr: 0.0000000 and normal test acc: 0.588
+
+Epoch: 25, Train Loss: 0.611 Train Acc: 0.980 Val Loss: 0.936 Val Acc: 0.891 with lr: 0.0000000 and normal test acc: 0.577
+

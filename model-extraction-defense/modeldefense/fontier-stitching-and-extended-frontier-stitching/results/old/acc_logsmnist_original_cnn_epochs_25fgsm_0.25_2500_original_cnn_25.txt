@@ -1,0 +1,12 @@
+Victim model ../models/mnist_original_cnn_epochs_25.h5test acc with 250 is 0.48660001158714294
+adv acc with 250 is 0.3124000132083893
+Victim model ../models/mnist_original_cnn_epochs_25.h5test acc with 500 is 0.6180999875068665
+adv acc with 500 is 0.4503999948501587
+Victim model ../models/mnist_original_cnn_epochs_25.h5test acc with 1000 is 0.8421000242233276
+adv acc with 1000 is 0.7523999810218811
+Victim model ../models/mnist_original_cnn_epochs_25.h5test acc with 5000 is 0.9164000153541565
+adv acc with 5000 is 0.77920001745224
+Victim model ../models/mnist_original_cnn_epochs_25.h5test acc with 10000 is 0.9419999718666077
+adv acc with 10000 is 0.7419999837875366
+Victim model ../models/mnist_original_cnn_epochs_25.h5test acc with 20000 is 0.873199999332428
+adv acc with 20000 is 0.6416000127792358

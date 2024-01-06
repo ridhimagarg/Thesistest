@@ -1,0 +1,13 @@
+Just After loading victim model adv acc is: 0.0
+Victim model ../models/original_02-09-2023/cifar10_250_WideResNet/Original_checkpoint_best.h5test acc with 250 is 0.2793000042438507
+adv acc with 250 is 0.2626500427722931
+Victim model ../models/original_02-09-2023/cifar10_250_WideResNet/Original_checkpoint_best.h5test acc with 500 is 0.33059999346733093
+adv acc with 500 is 0.29159802198410034
+Victim model ../models/original_02-09-2023/cifar10_250_WideResNet/Original_checkpoint_best.h5test acc with 1000 is 0.4383000135421753
+adv acc with 1000 is 0.3659684658050537
+Victim model ../models/original_02-09-2023/cifar10_250_WideResNet/Original_checkpoint_best.h5test acc with 5000 is 0.6202999949455261
+adv acc with 5000 is 0.44410449266433716
+Victim model ../models/original_02-09-2023/cifar10_250_WideResNet/Original_checkpoint_best.h5test acc with 10000 is 0.6929000020027161
+adv acc with 10000 is 0.38456106185913086
+Victim model ../models/original_02-09-2023/cifar10_250_WideResNet/Original_checkpoint_best.h5test acc with 20000 is 0.9200000166893005
+adv acc with 20000 is 0.6846317052841187

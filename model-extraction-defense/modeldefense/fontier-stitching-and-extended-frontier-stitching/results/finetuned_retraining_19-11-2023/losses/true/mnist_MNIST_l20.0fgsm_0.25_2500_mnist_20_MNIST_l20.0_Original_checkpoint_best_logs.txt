@@ -1,0 +1,27 @@
+Finetuned model test acc: [0.0257314033806324, 0.9930999875068665] 
+Finetuned model train adv acc: [0.02413693070411682, 0.995555579662323]
+Finetuned model test adv acc: [0.1902080625295639, 0.9440000057220459]
+Epoch: 1, Train Loss: 0.280 Train Acc: 0.924 Val Loss: 0.104 Val Acc: 0.969
+Epoch: 2, Train Loss: 0.086 Train Acc: 0.974 Val Loss: 0.070 Val Acc: 0.980
+Epoch: 3, Train Loss: 0.056 Train Acc: 0.983 Val Loss: 0.053 Val Acc: 0.986
+Epoch: 4, Train Loss: 0.040 Train Acc: 0.989 Val Loss: 0.042 Val Acc: 0.990
+Epoch: 5, Train Loss: 0.030 Train Acc: 0.992 Val Loss: 0.042 Val Acc: 0.989
+Epoch: 6, Train Loss: 0.023 Train Acc: 0.994 Val Loss: 0.030 Val Acc: 0.993
+Epoch: 7, Train Loss: 0.017 Train Acc: 0.996 Val Loss: 0.030 Val Acc: 0.993
+Epoch: 8, Train Loss: 0.013 Train Acc: 0.997 Val Loss: 0.026 Val Acc: 0.994
+Epoch: 9, Train Loss: 0.010 Train Acc: 0.998 Val Loss: 0.028 Val Acc: 0.993
+Epoch: 10, Train Loss: 0.008 Train Acc: 0.999 Val Loss: 0.023 Val Acc: 0.995
+Epoch: 11, Train Loss: 0.005 Train Acc: 0.999 Val Loss: 0.022 Val Acc: 0.995
+Epoch: 12, Train Loss: 0.005 Train Acc: 1.000 Val Loss: 0.022 Val Acc: 0.995
+Epoch: 13, Train Loss: 0.003 Train Acc: 1.000 Val Loss: 0.023 Val Acc: 0.995
+Epoch: 14, Train Loss: 0.003 Train Acc: 1.000 Val Loss: 0.022 Val Acc: 0.994
+Epoch: 15, Train Loss: 0.003 Train Acc: 1.000 Val Loss: 0.021 Val Acc: 0.995
+Epoch: 16, Train Loss: 0.001 Train Acc: 1.000 Val Loss: 0.020 Val Acc: 0.995
+Epoch: 17, Train Loss: 0.001 Train Acc: 1.000 Val Loss: 0.020 Val Acc: 0.996
+Epoch: 18, Train Loss: 0.001 Train Acc: 1.000 Val Loss: 0.019 Val Acc: 0.996
+Epoch: 19, Train Loss: 0.001 Train Acc: 1.000 Val Loss: 0.022 Val Acc: 0.995
+Epoch: 20, Train Loss: 0.012 Train Acc: 0.996 Val Loss: 0.025 Val Acc: 0.993
+Epoch: 21, Train Loss: 0.002 Train Acc: 1.000 Val Loss: 0.021 Val Acc: 0.995
+Epoch: 22, Train Loss: 0.001 Train Acc: 1.000 Val Loss: 0.021 Val Acc: 0.995
+Epoch: 23, Train Loss: 0.000 Train Acc: 1.000 Val Loss: 0.020 Val Acc: 0.996
+Best after loading the model adv : 0.9431999921798706Last after loading the model adv : 0.9448000192642212Last after loading the model adv : 0.9448000192642212

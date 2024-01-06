@@ -1,0 +1,44 @@
+# dataset_name: mnist
+# model_to_attack_path: ../models/original/mnist_20_MNIST_l20.0/Original_checkpoint_best.h5
+# epochs_extract: 50 #(with 10 and 50)
+# attacker_model_architecture: mnist_l2 #[resnet34, conv_2]
+# which_adv: "true"
+# adv_key_set_path: results/scratch/triggers/cifar10_50_resnet34trigger.npz
+# optimizer: adam # sgd
+# lr: 0.001
+# weight_decay: 0
+# dropout: 0
+
+dataset_name: cifar10
+model_to_attack_path: ../models/original_20-08-2023/cifar10_30_CIFAR10_BASE_2/Original_checkpoint_best.h5
+epochs_extract: 50 #(with 10 and 50)
+attacker_model_architecture: cifar10_base_2 #[resnet34, conv_2]
+which_adv: "full"
+adv_key_set_path: results/scratch/triggers/cifar10_50_resnet34trigger.npz
+optimizer: adam # sgd
+lr: 0.001
+weight_decay: 0
+dropout: 0
+
+# dataset_name: cifar10resnet
+# model_to_attack_path: ../models/original_02-09-2023/cifar10_250_WideResNet/Original_checkpoint_best.h5
+# epochs_extract: 50 #(with 10 and 50)
+# attacker_model_architecture: cifar10_wideresnet #[resnet34, conv_2]
+# which_adv: "true"
+# adv_key_set_path: results/scratch/triggers/cifar10_50_resnet34trigger.npz
+# optimizer: adam # sgd
+# lr: 0.001
+# weight_decay: 0
+# dropout: 0
+
+# dataset_name: cifar10resnet_255_preprocess
+# model_to_attack_path: ../models/original_07-09-2023/cifar10_250_WideResNet_255_preprocess/Original_checkpoint_best.h5
+# epochs_extract: 50 #(with 10 and 50)
+# attacker_model_architecture: cifar10_wideresnet #[resnet34, conv_2]
+# which_adv: "true"
+# adv_key_set_path: results/scratch/triggers/cifar10_50_resnet34trigger.npz
+# optimizer: adam # sgd
+# lr: 0.001
+# weight_decay: 0
+# dropout: 0
+

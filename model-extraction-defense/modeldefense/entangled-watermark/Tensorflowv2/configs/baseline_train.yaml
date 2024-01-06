@@ -1,0 +1,15 @@
+dataset_name: mnist
+batch_size: 512
+epochs: 10
+w_epochs: 10
+metric: cosine
+threshold: 0.1
+train_lr: 0.001
+source: 4
+target: 3
+maxiter: 10
+distribution: in
+trigger_set_path: data/fgsm/mnistMNIST_l2_EWE/in/3/fgsm_0.1original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_trigger.npz
+target_set_path: data/fgsm/mnistMNIST_l2_EWE/in/3/target_0.1original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_target.npz
+model_for_baseline_train: models/original_06-10-2023/mnist_20_MNIST_l20.0/Original_checkpoint_best.h5
+model_architecture: mnist_l2

@@ -1,0 +1,9 @@
+
+Loaded EWE trained model models/ewe_training_finetune13-10-2023/7_source_1_distrib_outmnist_20_MNIST_l20.0Original_checkpoint_best/ewe_model.h5 test accuracy 0.9887522980570793
+
+Loaded EWE trained model models/ewe_training_finetune13-10-2023/7_source_1_distrib_outmnist_20_MNIST_l20.0Original_checkpoint_best/ewe_model.h5 watermark accuracy 1.0
+
+Params
+Trigger set: data/fgsm/mnistMNIST_l2_EWE/out/7/fgsm_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_trigger.npz 
+Target set: data/fgsm/mnistMNIST_l2_EWE/out/7/target_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_target.npz 
+

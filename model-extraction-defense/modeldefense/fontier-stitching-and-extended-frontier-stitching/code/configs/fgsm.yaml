@@ -1,0 +1,17 @@
+#dataset_name: mnist
+#model_to_attack_path: ../models/original/mnist_20_MNIST_l20.0/Original_checkpoint_best.h5
+#adversarial_sample_size_list: [100, 250, 500, 1000, 2500, 10000]
+#eps_list: [0.025, 0.1, 0.25, 0.35, 0.4, 0.5, 0.75]
+
+dataset_name: cifar10
+model_to_attack_path: ../models/original_20-08-2023/cifar10_30_CIFAR10_BASE_2/Original_checkpoint_best.h5
+# adversarial_sample_size_list: [100, 250, 500, 1000, 2500, 10000]
+adversarial_sample_size_list: [10000]
+# eps_list: [0.035, 0.045, 0.055, 0.065, 0.075, 0.085, 0.095]
+# eps_list: [0.025, 0.1, 0.25, 0.35, 0.4, 0.5, 0.75]
+eps_list: [0.01, 0.015]
+
+# dataset_name: cifar10resnet
+# model_to_attack_path: ../models/original_02-09-2023/cifar10_250_WideResNet/Original_checkpoint_best.h5
+# adversarial_sample_size_list: [100, 250, 500, 1000, 2500, 10000]
+# eps_list: [0.025, 0.035, 0.045, 0.055, 0.065, 0.075, 0.085, 0.095]
