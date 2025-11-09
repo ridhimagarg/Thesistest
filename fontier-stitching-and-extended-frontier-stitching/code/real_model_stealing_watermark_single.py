@@ -78,7 +78,7 @@ else:
 
 def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_architecture, number_of_queries,
                             num_epochs_to_steal, dropout, optimizer="adam", lr=0.001, weight_decay=0.00,
-                            model_to_attack_path='../models/mnist_original_cnn_epochs_25.h5'):
+                            model_to_attack_path='../models/mnist_original_cnn_epochs_25.h5', results_path=None):
     """
             Main idea
             --------
@@ -108,6 +108,30 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
     print("=" * 60, flush=True)
     logger.info(f"Starting model extraction attack on {model_to_attack_path}")
     
+    # Set RESULTS_PATH if not provided
+    from datetime import datetime
+    if results_path is None:
+        now = datetime.now().strftime("%d-%m-%Y")
+        RESULTS_PATH = f"../results/attack_finetuned{now}"
+    else:
+        RESULTS_PATH = results_path
+    
+    # Set other paths (needed for file operations)
+    LOSS_Acc_FOLDER = "losses_acc"
+    now = datetime.now().strftime("%d-%m-%Y")
+    MODEL_PATH = f"../models/attack_finetuned{now}"
+    DATA_PATH = "../data"
+    
+    # Extract which_adv from adversarial path
+    which_adv = adv_data_path_numpy.replace("\\", "/").split("/")[-2] if "/" in adv_data_path_numpy.replace("\\", "/") else "true"
+    
+    # Create directories if they don't exist
+    if not os.path.exists(os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, which_adv)):
+        os.makedirs(os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, which_adv), exist_ok=True)
+    
+    if not os.path.exists(os.path.join(MODEL_PATH, which_adv)):
+        os.makedirs(os.path.join(MODEL_PATH, which_adv), exist_ok=True)
+    
     # Initialize ExperimentLogger for comprehensive logging
     exp_logger = ExperimentLogger("model_extraction_attack", output_dir=RESULTS_PATH)
     
@@ -133,6 +157,9 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
         dataset_name=dataset_name, 
         adv_data_path=adv_data_path_numpy
     )
+    
+    # Get num_classes from dataset config
+    num_classes = DataManager.get_dataset_info(dataset_name)['num_classes']
 
     models_mapping = {"mnist_l2": models.MNIST_L2, "cifar10_base_2": models.CIFAR10_BASE_2, "resnet34": models.ResNet34,
                       "cifar10_wideresnet": models.wide_residual_network}
@@ -170,7 +197,7 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
 
     if attacker_model_architecture == "resnet34":
 
-        classifier_original = TensorFlowV2Classifier(model, nb_classes=10,
+        classifier_original = TensorFlowV2Classifier(model, nb_classes=num_classes,
                                                      input_shape=(x_train[1], x_train[2], x_train[3]))
 
     else:
@@ -237,9 +264,9 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
 
             else:
                 if dropout:
-                    model_name, model_stolen = models_mapping[attacker_model_architecture](dropout)
+                    model_name, model_stolen = models_mapping[attacker_model_architecture](dropout=dropout, num_classes=num_classes)
                 else:
-                    model_name, model_stolen = models_mapping[attacker_model_architecture]()
+                    model_name, model_stolen = models_mapping[attacker_model_architecture](num_classes=num_classes)
 
                 model_stolen.compile(loss=tf.keras.losses.CategoricalCrossentropy(), optimizer="adam", metrics=['accuracy'])
 
@@ -247,7 +274,7 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
 
             if attacker_model_architecture == "resnet34":
 
-                classifier_stolen = TensorFlowV2Classifier(model_stolen, nb_classes=10, loss_object=loss_object,
+                classifier_stolen = TensorFlowV2Classifier(model_stolen, nb_classes=num_classes, loss_object=loss_object,
                                                            input_shape=input_shape, channels_first=False,
                                                            train_step=train_step)
 
@@ -288,7 +315,7 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
             print(f"   🔍 Verifying theft using statistical methods...", flush=True)
             verifier = WatermarkVerifier(
                 victim_acc=victim_watermark_acc,  # Use victim's watermark accuracy
-                num_classes=10,
+                num_classes=num_classes,
                 watermark_size=len(x_adv)
             )
             verification_result = verifier.verify_theft(
@@ -366,11 +393,16 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
     print(f"\n📈 Generating visualization...", flush=True)
     logger.info("Generating visualization")
     
-    image_save_name = os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
+    # Save plot to both old location (for compatibility) and ExperimentLogger plots directory
+    image_save_name_old = os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
                                    "_".join((dataset_name, str(num_epochs),
                                              model_to_attack_path.replace("\\", "/").split("/")[
                                                  -2] + "TestandWatermarkAcc.png")))
-    os.makedirs(os.path.dirname(image_save_name), exist_ok=True)
+    os.makedirs(os.path.dirname(image_save_name_old), exist_ok=True)
+    
+    # Also save to ExperimentLogger plots directory
+    image_save_name_new = str(exp_logger.experiment_dir / "plots" / "test_and_watermark_accuracy.png")
+    os.makedirs(os.path.dirname(image_save_name_new), exist_ok=True)
 
     df = pd.DataFrame(results, columns=('Method Name', 'Stealing Dataset Size', 'Accuracy'))
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -383,9 +415,14 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
     ax.set_ylabel("Stolen Model Test and Adversarial Accuracy")
     for name, group in df_adv.groupby("Method Name"):
         group.plot(1, 2, ax=ax, label="Watermark acc", linestyle='--', marker='o', color='tab:orange')
-    plt.savefig(image_save_name)
-    print(f"   ✅ Visualization saved to: {image_save_name}", flush=True)
-    logger.info(f"Visualization saved to: {image_save_name}")
+    
+    # Save to both locations
+    plt.savefig(image_save_name_old)
+    plt.savefig(image_save_name_new)
+    plt.close()  # Close figure to free memory
+    print(f"   ✅ Visualization saved to: {image_save_name_old}", flush=True)
+    print(f"   ✅ Visualization saved to: {image_save_name_new}", flush=True)
+    logger.info(f"Visualization saved to: {image_save_name_old} and {image_save_name_new}")
     
     # Save DataFrames to CSV for research paper analysis
     csv_test_path = os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
@@ -407,6 +444,12 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
     
     # Save all ExperimentLogger data
     exp_logger.save_all()
+    
+    # Create LaTeX table from results
+    latex_table = exp_logger.create_latex_table("attack_results.tex")
+    if latex_table:
+        print(f"   ✅ LaTeX table saved to: {exp_logger.experiment_dir / 'tables' / 'attack_results.tex'}", flush=True)
+    
     print(f"   ✅ Comprehensive experiment data saved to: {exp_logger.experiment_dir}", flush=True)
     
     print("=" * 60, flush=True)

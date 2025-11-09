@@ -10,10 +10,106 @@ import logging
 from typing import Tuple, Optional, Dict, Any
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.datasets import mnist, cifar10
+from tensorflow.keras.datasets import mnist, cifar10, cifar100
 
 # Configure logger
 logger = logging.getLogger(__name__)
+
+# Try to import tensorflow_datasets for STL-10, EuroSAT, and SVHN
+try:
+    import tensorflow_datasets as tfds
+    TFDS_AVAILABLE = True
+except ImportError:
+    TFDS_AVAILABLE = False
+    logger.warning("tensorflow_datasets not available. STL-10, EuroSAT, and SVHN will not work.")
+
+
+def _load_svhn_tfds():
+    """Load SVHN dataset from TensorFlow Datasets."""
+    if not TFDS_AVAILABLE:
+        raise ImportError("tensorflow_datasets is required for SVHN. Install with: pip install tensorflow-datasets")
+    
+    logger.info("Loading SVHN dataset from TensorFlow Datasets...")
+    train_ds = tfds.load('svhn_cropped', split='train', as_supervised=True, shuffle_files=True)
+    test_ds = tfds.load('svhn_cropped', split='test', as_supervised=True, shuffle_files=False)
+    
+    x_train, y_train = [], []
+    for img, label in train_ds:
+        # Convert to numpy and ensure uint8 format
+        img_np = img.numpy()
+        if img_np.dtype != np.uint8:
+            img_np = (img_np * 255).astype(np.uint8) if img_np.max() <= 1.0 else img_np.astype(np.uint8)
+        x_train.append(img_np)
+        y_train.append(int(label.numpy()))
+    
+    x_test, y_test = [], []
+    for img, label in test_ds:
+        img_np = img.numpy()
+        if img_np.dtype != np.uint8:
+            img_np = (img_np * 255).astype(np.uint8) if img_np.max() <= 1.0 else img_np.astype(np.uint8)
+        x_test.append(img_np)
+        y_test.append(int(label.numpy()))
+    
+    return (np.array(x_train), np.array(y_train)), (np.array(x_test), np.array(y_test))
+
+
+def _load_stl10():
+    """Load STL-10 dataset from TensorFlow Datasets."""
+    if not TFDS_AVAILABLE:
+        raise ImportError("tensorflow_datasets is required for STL-10. Install with: pip install tensorflow-datasets")
+    
+    logger.info("Loading STL-10 dataset from TensorFlow Datasets...")
+    train_ds = tfds.load('stl10', split='train', as_supervised=True, shuffle_files=True)
+    test_ds = tfds.load('stl10', split='test', as_supervised=True, shuffle_files=False)
+    
+    x_train, y_train = [], []
+    for img, label in train_ds:
+        # Convert to numpy and ensure uint8 format
+        img_np = img.numpy()
+        if img_np.dtype != np.uint8:
+            img_np = (img_np * 255).astype(np.uint8) if img_np.max() <= 1.0 else img_np.astype(np.uint8)
+        x_train.append(img_np)
+        y_train.append(int(label.numpy()))
+    
+    x_test, y_test = [], []
+    for img, label in test_ds:
+        img_np = img.numpy()
+        if img_np.dtype != np.uint8:
+            img_np = (img_np * 255).astype(np.uint8) if img_np.max() <= 1.0 else img_np.astype(np.uint8)
+        x_test.append(img_np)
+        y_test.append(int(label.numpy()))
+    
+    return (np.array(x_train), np.array(y_train)), (np.array(x_test), np.array(y_test))
+
+
+def _load_eurosat():
+    """Load EuroSAT dataset from TensorFlow Datasets."""
+    if not TFDS_AVAILABLE:
+        raise ImportError("tensorflow_datasets is required for EuroSAT. Install with: pip install tensorflow-datasets")
+    
+    logger.info("Loading EuroSAT dataset from TensorFlow Datasets...")
+    # EuroSAT only has train split, so we split it 80/20
+    full_ds = tfds.load('eurosat', split='train', as_supervised=True, shuffle_files=True)
+    
+    # Convert to list first, ensuring uint8 format
+    data = []
+    for img, label in full_ds:
+        img_np = img.numpy()
+        if img_np.dtype != np.uint8:
+            img_np = (img_np * 255).astype(np.uint8) if img_np.max() <= 1.0 else img_np.astype(np.uint8)
+        data.append((img_np, int(label.numpy())))
+    
+    # Split 80/20
+    split_idx = int(len(data) * 0.8)
+    train_data = data[:split_idx]
+    test_data = data[split_idx:]
+    
+    x_train = np.array([img for img, _ in train_data])
+    y_train = np.array([label for _, label in train_data])
+    x_test = np.array([img for img, _ in test_data])
+    y_test = np.array([label for _, label in test_data])
+    
+    return (x_train, y_train), (x_test, y_test)
 
 
 class DataManager:
@@ -34,6 +130,34 @@ class DataManager:
             'num_channels': 3, 
             'num_classes': 10,
             'loader': cifar10.load_data
+        },
+        'cifar100': {
+            'img_rows': 32, 
+            'img_cols': 32, 
+            'num_channels': 3, 
+            'num_classes': 100,
+            'loader': cifar100.load_data
+        },
+        'svhn': {
+            'img_rows': 32, 
+            'img_cols': 32, 
+            'num_channels': 3, 
+            'num_classes': 10,
+            'loader': _load_svhn_tfds
+        },
+        'stl10': {
+            'img_rows': 96, 
+            'img_cols': 96, 
+            'num_channels': 3, 
+            'num_classes': 10,
+            'loader': _load_stl10
+        },
+        'eurosat': {
+            'img_rows': 64, 
+            'img_cols': 64, 
+            'num_channels': 3, 
+            'num_classes': 10,
+            'loader': _load_eurosat
         },
         'cifar10resnet': {
             'img_rows': 32, 
@@ -142,8 +266,8 @@ class DataManager:
         one-hot encoding), and returns it ready for model training/evaluation.
         
         Args:
-            dataset_name: Name of the dataset ('mnist', 'cifar10', 'cifar10resnet', 
-                         'cifar10resnet_255_preprocess').
+            dataset_name: Name of the dataset ('mnist', 'cifar10', 'cifar100', 'svhn', 
+                         'stl10', 'eurosat', 'cifar10resnet', 'cifar10resnet_255_preprocess').
             normalize: Whether to normalize the data. Default is True.
             shuffle: Whether to shuffle the training data. Default is True.
             one_hot_encode: Whether to one-hot encode labels. Default is True.
@@ -184,9 +308,20 @@ class DataManager:
         num_classes = config['num_classes']
         input_shape = (img_rows, img_cols, num_channels)
         
-        # Reshape data
-        x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, num_channels)
-        x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, num_channels)
+        # Reshape data (only if needed - TensorFlow Datasets may already be in correct shape)
+        if len(x_train.shape) == 4 and x_train.shape[1:] == (img_rows, img_cols, num_channels):
+            # Already in correct shape
+            pass
+        elif len(x_train.shape) == 4:
+            # Different shape, resize if needed (for STL-10, EuroSAT which might be different sizes)
+            if x_train.shape[1] != img_rows or x_train.shape[2] != img_cols:
+                # Resize images to expected size
+                x_train = tf.image.resize(x_train, [img_rows, img_cols]).numpy()
+                x_test = tf.image.resize(x_test, [img_rows, img_cols]).numpy()
+        else:
+            # Need to reshape
+            x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, num_channels)
+            x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, num_channels)
         
         # One-hot encode labels
         if one_hot_encode:

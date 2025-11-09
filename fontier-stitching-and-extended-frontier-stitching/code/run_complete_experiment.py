@@ -127,6 +127,10 @@ class ExperimentRunner:
             'adversarial_batch_size': 64,  # Not in config, use default
             'clip_min': 0.0,
             'clip_max': 1.0,
+            # Multi-attack support
+            'attack_types': exp_config.watermark.attack_types,
+            'use_multiple_attacks': exp_config.watermark.use_multiple_attacks,
+            'attack_params': exp_config.watermark.attack_params,
             
             # Attack
             'attacker_model_architecture': exp_config.attack.attacker_architecture,
@@ -289,40 +293,101 @@ class ExperimentRunner:
         if not self.config['model_path']:
             raise ValueError("Model path not set. Run step1_train_original first.")
         
-        # Import and run adversarial generation
-        from frontier_stitching import fgsm_attack
+        # Check if multi-attack is enabled
+        use_multi_attack = self.config.get('use_multiple_attacks', False)
+        attack_types = self.config.get('attack_types', ['fgsm'])
         
-        # Generate adversarial examples for each epsilon and sample size combination
-        generated_files = []
-        
-        for eps in self.config['eps_list']:
-            for sample_size in self.config['adversarial_sample_size_list']:
-                logger.info(f"   Generating: eps={eps}, size={sample_size}")
-                
-                try:
-                    # Call the adversarial generation function
-                    fgsm_attack(
-                        dataset_name=self.config['dataset_name'],
-                        model_path=self.config['model_path'],
-                        eps=eps,
-                        adversarial_sample_size=sample_size
-                    )
-                    generated_files.append((eps, sample_size))
-                except Exception as e:
-                    logger.warning(f"   Failed to generate for eps={eps}, size={sample_size}: {e}")
-                    continue
-        
-        # Find the generated adversarial file
-        # The path structure is: ../data/fgsm/{dataset_name}/{which_adv}/fgsm_{eps}_{size}_{model_name}.npz
-        model_path_normalized = self.config['model_path'].replace("\\", "/")
-        model_parts = model_path_normalized.split("/")[-2:]
-        model_name = "_".join(model_parts).replace(".h5", "").replace(".keras", "")
-        
-        # Use the first combination for watermarking
-        eps = self.config['eps_list'][0]
-        size = self.config['adversarial_sample_size_list'][0]
-        base_filename = f"fgsm_{eps}_{size}_{model_name}.npz"
-        adv_path = f"../data/fgsm/{self.config['dataset_name']}/{self.config['which_adv']}/{base_filename}"
+        if use_multi_attack and len(attack_types) > 1:
+            # Use new multi-attack module
+            logger.info(f"   Using multi-attack mode with: {attack_types}")
+            from adversarial_attacks import generate_multiple_attacks
+            
+            # Generate for each epsilon and sample size combination
+            generated_files = []
+            for eps in self.config['eps_list']:
+                for sample_size in self.config['adversarial_sample_size_list']:
+                    logger.info(f"   Generating: eps={eps}, size={sample_size}, attacks={attack_types}")
+                    
+                    try:
+                        results = generate_multiple_attacks(
+                            dataset_name=self.config['dataset_name'],
+                            model_path=self.config['model_path'],
+                            attack_types=attack_types,
+                            eps=eps,
+                            adversarial_sample_size=sample_size,
+                            clip_values=(0., 1.),
+                            attack_params=self.config.get('attack_params', {}),
+                            output_dir="../data/adversarial"
+                        )
+                        generated_files.append((eps, sample_size, attack_types))
+                        logger.info(f"   Successfully generated with {len(results)} attack types")
+                    except Exception as e:
+                        logger.warning(f"   Failed to generate for eps={eps}, size={sample_size}: {e}")
+                        continue
+            
+            # Use the first attack type and first combination for watermarking
+            eps = self.config['eps_list'][0]
+            size = self.config['adversarial_sample_size_list'][0]
+            attack_type = attack_types[0]
+            model_path_normalized = self.config['model_path'].replace("\\", "/")
+            model_parts = model_path_normalized.split("/")[-2:]
+            model_name = "_".join(model_parts).replace(".h5", "").replace(".keras", "")
+            base_filename = f"{attack_type}_{eps}_{size}_{model_name}.npz"
+            adv_path = f"../data/adversarial/{self.config['dataset_name']}/{base_filename}"
+            
+        else:
+            # Use original FGSM-based frontier-stitching
+            logger.info("   Using FGSM-based frontier-stitching (original method)")
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("frontier_stitching", "frontier-stitching.py")
+            frontier_stitching = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(frontier_stitching)
+            fgsm_attack = frontier_stitching.fgsm_attack
+            
+            # Generate adversarial examples for each epsilon and sample size combination
+            generated_files = []
+            
+            for eps in self.config['eps_list']:
+                for sample_size in self.config['adversarial_sample_size_list']:
+                    logger.info(f"   Generating: eps={eps}, size={sample_size}")
+                    
+                    try:
+                        # Generate file names
+                        model_path_normalized = self.config['model_path'].replace("\\", "/")
+                        model_parts = model_path_normalized.split("/")[-2:]
+                        model_name = "_".join(model_parts).replace(".h5", "").replace(".keras", "")
+                        base_filename = f"fgsm_{eps}_{sample_size}_{model_name}.npz"
+                        
+                        numpy_array_full_file_name = f"../data/fgsm/{self.config['dataset_name']}/full/{base_filename}"
+                        numpy_array_true_file_name = f"../data/fgsm/{self.config['dataset_name']}/{self.config.get('which_adv', 'true')}/{base_filename}"
+                        numpy_array_false_file_name = f"../data/fgsm/{self.config['dataset_name']}/false/{base_filename}"
+                        
+                        # Call the adversarial generation function
+                        fgsm_attack(
+                            dataset_name=self.config['dataset_name'],
+                            model_path=self.config['model_path'],
+                            eps=eps,
+                            adversarial_sample_size=sample_size,
+                            npz_full_file_name=numpy_array_full_file_name,
+                            npz_true_file_name=numpy_array_true_file_name,
+                            npz_false_file_name=numpy_array_false_file_name
+                        )
+                        generated_files.append((eps, sample_size))
+                    except Exception as e:
+                        logger.warning(f"   Failed to generate for eps={eps}, size={sample_size}: {e}")
+                        continue
+            
+            # Find the generated adversarial file
+            # The path structure is: ../data/fgsm/{dataset_name}/{which_adv}/fgsm_{eps}_{size}_{model_name}.npz
+            model_path_normalized = self.config['model_path'].replace("\\", "/")
+            model_parts = model_path_normalized.split("/")[-2:]
+            model_name = "_".join(model_parts).replace(".h5", "").replace(".keras", "")
+            
+            # Use the first combination for watermarking
+            eps = self.config['eps_list'][0]
+            size = self.config['adversarial_sample_size_list'][0]
+            base_filename = f"fgsm_{eps}_{size}_{model_name}.npz"
+            adv_path = f"../data/fgsm/{self.config['dataset_name']}/{self.config.get('which_adv', 'true')}/{base_filename}"
         
         if not os.path.exists(adv_path):
             raise FileNotFoundError(f"Adversarial file not found. Expected: {adv_path}")
@@ -344,6 +409,10 @@ class ExperimentRunner:
         # Import and run watermarking
         from watermarking_finetuning import watermark_finetuning
         
+        # Set results path for watermarking
+        now = datetime.now().strftime("%d-%m-%Y")
+        watermark_results_path = f"../results/finetuned_finetuning_{now}"
+        
         model = watermark_finetuning(
             dataset_name=self.config['dataset_name'],
             adv_data_path_numpy=self.config['adversarial_path'],
@@ -357,7 +426,8 @@ class ExperimentRunner:
             num_layers_unfreeze=self.config.get('num_layers_unfreeze', 1),
             lr_schedule_enabled=self.config.get('watermark_lr_schedule_enabled', True),
             lr_decay_factor=self.config.get('watermark_lr_decay_factor', 0.5),
-            lr_decay_epochs=self.config.get('watermark_lr_decay_epochs', [8, 12])
+            lr_decay_epochs=self.config.get('watermark_lr_decay_epochs', [8, 12]),
+            results_path=watermark_results_path
         )
         
         # Determine watermarked model path
@@ -397,7 +467,8 @@ class ExperimentRunner:
             optimizer=self.config.get('attack_optimizer', self.config['optimizer']),
             lr=self.config.get('attack_lr', self.config['lr']),
             weight_decay=self.config.get('attack_weight_decay', self.config['weight_decay']),
-            model_to_attack_path=self.config['watermarked_model_path']
+            model_to_attack_path=self.config['watermarked_model_path'],
+            results_path=self.experiment_dir
         )
         
         logger.info("   Model extraction attack completed")
@@ -496,6 +567,9 @@ Examples:
   
   # Custom configuration (modify script or use config file)
   python run_complete_experiment.py --config config.json
+  
+  # Run on all RGB datasets
+  python run_complete_experiment.py --all-datasets
         """
     )
     
@@ -509,17 +583,73 @@ Examples:
                         help='Skip step 4: Model extraction attack')
     parser.add_argument('--config', type=str, default=None,
                         help='Path to YAML or JSON configuration file (default: configs/default.yaml)')
+    parser.add_argument('--all-datasets', action='store_true',
+                        help='Run experiment on all RGB datasets (cifar10, cifar100, svhn, stl10, eurosat)')
+    parser.add_argument('--datasets', nargs='+', type=str, default=None,
+                        help='List of specific datasets to run (e.g., --datasets cifar10 cifar100)')
     
     args = parser.parse_args()
     
-    # Create and run experiment (will load from default.yaml if no config provided)
-    runner = ExperimentRunner(config_file=args.config)
-    runner.run_complete_experiment(
-        skip_training=args.skip_training,
-        skip_adversarial=args.skip_adversarial,
-        skip_watermarking=args.skip_watermarking,
-        skip_attack=args.skip_attack
-    )
+    # Determine which datasets to run
+    if args.all_datasets:
+        # All RGB datasets
+        datasets = ['cifar10', 'cifar100', 'svhn', 'stl10', 'eurosat']
+        logger.info(f"🚀 Running experiments on all RGB datasets: {datasets}")
+    elif args.datasets:
+        datasets = args.datasets
+        logger.info(f"🚀 Running experiments on specified datasets: {datasets}")
+    else:
+        # Single dataset from config
+        datasets = None
+    
+    if datasets:
+        # Run on multiple datasets
+        total_datasets = len(datasets)
+        for idx, dataset_name in enumerate(datasets, 1):
+            logger.info("=" * 80)
+            logger.info(f"📊 Dataset {idx}/{total_datasets}: {dataset_name.upper()}")
+            logger.info("=" * 80)
+            
+            try:
+                # Load config and update dataset name
+                if args.config:
+                    runner = ExperimentRunner(config_file=args.config)
+                else:
+                    runner = ExperimentRunner()
+                
+                # Update dataset name in config
+                runner.config['dataset_name'] = dataset_name
+                
+                # Update model architecture based on dataset if needed
+                if dataset_name in ['cifar10', 'cifar100', 'svhn']:
+                    runner.config['model_architecture'] = 'cifar10_base_2'
+                elif dataset_name in ['stl10', 'eurosat']:
+                    # STL-10 and EuroSAT might need different architectures
+                    runner.config['model_architecture'] = 'cifar10_base_2'  # Default for now
+                
+                runner.run_complete_experiment(
+                    skip_training=args.skip_training,
+                    skip_adversarial=args.skip_adversarial,
+                    skip_watermarking=args.skip_watermarking,
+                    skip_attack=args.skip_attack
+                )
+                logger.info(f"✅ Completed experiment for {dataset_name}")
+            except Exception as e:
+                logger.error(f"❌ Failed experiment for {dataset_name}: {e}")
+                continue
+        
+        logger.info("=" * 80)
+        logger.info(f"🎉 Completed experiments on {total_datasets} dataset(s)")
+        logger.info("=" * 80)
+    else:
+        # Single dataset from config
+        runner = ExperimentRunner(config_file=args.config)
+        runner.run_complete_experiment(
+            skip_training=args.skip_training,
+            skip_adversarial=args.skip_adversarial,
+            skip_watermarking=args.skip_watermarking,
+            skip_attack=args.skip_attack
+        )
 
 
 if __name__ == "__main__":

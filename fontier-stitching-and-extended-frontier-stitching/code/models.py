@@ -73,7 +73,7 @@ def MNIST_L5(dropout=0.0):
     # model.add(Dropout(0.5))
     # model.add(Dense(num_classes, activation='softmax'))
 
-def CIFAR10_BASE_2(input_shape = (32,32,3), dropout=0.0):
+def CIFAR10_BASE_2(input_shape = (32,32,3), dropout=0.0, num_classes=10):
 
     model = tf.keras.models.Sequential()
 
@@ -99,7 +99,7 @@ def CIFAR10_BASE_2(input_shape = (32,32,3), dropout=0.0):
     model.add(layers.Dense(128, activation="relu"))
     model.add(layers.BatchNormalization())
     model.add(layers.Dropout(0.5))
-    model.add(layers.Dense(10, activation="softmax"))
+    model.add(layers.Dense(num_classes, activation="softmax"))
     name1 = "CIFAR10_BASE_2"
 
     return name1, model
@@ -133,7 +133,7 @@ def CIFAR10_BASE_3(input_shape = (32,32,3), dropout=0.0):
     model.add(layers.Dense(128, activation="relu"))
     model.add(layers.BatchNormalization())
     model.add(layers.Dropout(0.5))
-    model.add(layers.Dense(10, activation="softmax"))
+    model.add(layers.Dense(num_classes, activation="softmax"))
     name1 = "CIFAR10_BASE_3"
 
     return name1, model

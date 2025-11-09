@@ -13,7 +13,7 @@ import logging
 import os
 import sys
 import warnings
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict
 
 import numpy as np
 import tensorflow as tf
@@ -22,6 +22,11 @@ from tensorflow.keras.models import load_model
 from utils.data_utils import DataManager
 from utils.performance_utils import run_parallel_processing, create_config_list
 from config import ConfigManager, ExperimentConfig
+from adversarial_attacks import (
+    create_art_classifier,
+    create_attack_instance,
+    get_supported_attacks
+)
 
 # Suppress warnings
 warnings.filterwarnings('ignore')
@@ -106,10 +111,12 @@ def gen_adversaries(
     eps: float,
     clip_min: float = 0.0,
     clip_max: float = 1.0,
-    batch_size: int = BATCH_SIZE
+    batch_size: int = BATCH_SIZE,
+    attack_type: str = 'fgsm',
+    attack_params: Optional[Dict] = None
 ) -> Tuple[List[Tuple], List[Tuple]]:
     """
-    Generate and separate true and false adversaries using FGSM with batch processing.
+    Generate and separate true and false adversaries using specified attack type with batch processing.
 
     True adversaries: Original prediction is correct, adversarial prediction is incorrect.
     False adversaries: Both original and adversarial predictions are correct.
@@ -123,6 +130,8 @@ def gen_adversaries(
         clip_min: Minimum value for clipping adversarial examples.
         clip_max: Maximum value for clipping adversarial examples.
         batch_size: Batch size for processing images.
+        attack_type: Type of attack to use ('fgsm', 'pgd', 'bim', etc.). Default: 'fgsm'.
+        attack_params: Optional dict of attack-specific parameters.
 
     Returns:
         Tuple of (true_adversaries, false_adversaries) where each is a list of
@@ -132,8 +141,29 @@ def gen_adversaries(
     false_advs = []
     max_true_advs = max_false_advs = num_adversaries // 2
     
-    logger.info(f"Generating {num_adversaries} adversaries ({max_true_advs} true, {max_false_advs} false)")
+    logger.info(f"Generating {num_adversaries} adversaries ({max_true_advs} true, {max_false_advs} false) using {attack_type.upper()}")
     logger.info(f"Using batch size: {batch_size}")
+    
+    # Create ART classifier if using non-FGSM attack
+    use_art_attack = attack_type.lower() != 'fgsm'
+    classifier = None
+    attacker = None
+    
+    if use_art_attack:
+        try:
+            logger.info(f"Using ART attack: {attack_type}")
+            from art.estimators.classification import KerasClassifier
+            classifier = KerasClassifier(
+                clip_values=(clip_min, clip_max),
+                model=model,
+                use_logits=False
+            )
+            attack_params = attack_params or {}
+            attacker = create_attack_instance(attack_type, classifier, eps, **attack_params)
+        except Exception as e:
+            logger.warning(f"Failed to create ART attack {attack_type}: {e}. Falling back to FGSM.")
+            use_art_attack = False
+            attack_type = 'fgsm'
     
     # Pre-filter: Check enough images to find what we need
     # We need at least num_adversaries correctly classified images
@@ -220,23 +250,35 @@ def gen_adversaries(
         x_batch = images[batch_indices]
         y_batch = labels[batch_indices]
         
-        # Convert to tensors
-        x_tensor = tf.constant(x_batch, dtype=tf.float32)
-        y_tensor = tf.constant(y_batch, dtype=tf.float32)
-        
         # Generate adversarial examples for the batch
-        x_adv_batch = fast_gradient_signed_batch(x_tensor, y_tensor, model, eps, clip_min, clip_max)
+        if use_art_attack and attacker is not None:
+            # Use ART attack
+            x_adv_batch = attacker.generate(x_batch)
+            x_adv_batch = np.clip(x_adv_batch, clip_min, clip_max)
+            x_adv_np = x_adv_batch  # Already numpy array
+        else:
+            # Use original FGSM method
+            x_tensor = tf.constant(x_batch, dtype=tf.float32)
+            y_tensor = tf.constant(y_batch, dtype=tf.float32)
+            x_adv_batch_tf = fast_gradient_signed_batch(x_tensor, y_tensor, model, eps, clip_min, clip_max)
+            x_adv_np = x_adv_batch_tf.numpy()
+            x_adv_batch = x_adv_np
         
         # Get predictions for original and adversarial images
-        y_pred_orig = model(x_tensor)
-        y_pred_adv = model(x_adv_batch)
+        if use_art_attack:
+            # Use model directly for predictions
+            y_pred_orig = model.predict(x_batch, verbose=0, batch_size=batch_size)
+            y_pred_adv = model.predict(x_adv_batch, verbose=0, batch_size=batch_size)
+        else:
+            # Use tensorflow for predictions
+            x_tensor = tf.constant(x_batch, dtype=tf.float32)
+            x_adv_tensor = tf.constant(x_adv_np, dtype=tf.float32)
+            y_pred_orig = model(x_tensor)
+            y_pred_adv = model(x_adv_tensor)
         
-        y_pred_classes = tf.argmax(y_pred_orig, axis=1).numpy()
-        y_pred_adv_classes = tf.argmax(y_pred_adv, axis=1).numpy()
+        y_pred_classes = np.argmax(y_pred_orig, axis=1)
+        y_pred_adv_classes = np.argmax(y_pred_adv, axis=1)
         y_true_classes = np.argmax(y_batch, axis=1)
-        
-        # Convert adversarial images to numpy
-        x_adv_np = x_adv_batch.numpy()
         
         # Classify and store adversaries
         for i in range(len(batch_indices)):
@@ -290,22 +332,29 @@ def fgsm_attack(
     adversarial_sample_size: int = 1000,
     npz_full_file_name: str = 'mnist_cnn_adv.npz',
     npz_true_file_name: str = 'mnist_cnn_adv.npz',
-    npz_false_file_name: str = 'mnist_cnn_adv.npz'
+    npz_false_file_name: str = 'mnist_cnn_adv.npz',
+    attack_type: str = 'fgsm',
+    attack_types: Optional[List[str]] = None,
+    attack_params: Optional[Dict[str, Dict]] = None
 ) -> None:
     """
-    Generate FGSM adversarial examples and save them to NPZ files.
+    Generate adversarial examples using specified attack type(s) and save them to NPZ files.
 
     This function combines data preprocessing, model loading, and adversary generation
     to create and save true adversaries, false adversaries, and combined adversaries.
+    Supports multiple attack types via ART library.
 
     Args:
         dataset_name: Name of the dataset.
         model_path: Path to the Keras model file.
-        eps: Perturbation level (epsilon) for FGSM attack.
+        eps: Perturbation level (epsilon) for attack.
         adversarial_sample_size: Total number of adversarial examples to generate.
         npz_full_file_name: Path to save combined (true + false) adversaries.
         npz_true_file_name: Path to save true adversaries only.
         npz_false_file_name: Path to save false adversaries only.
+        attack_type: Single attack type to use ('fgsm', 'pgd', 'bim', etc.). Default: 'fgsm'.
+        attack_types: List of attack types to use. If provided, generates for each attack type.
+        attack_params: Dict mapping attack_type to its specific parameters.
 
     Raises:
         FileNotFoundError: If model_path does not exist.
@@ -368,45 +417,150 @@ def fgsm_attack(
         images_to_use = x_test
         labels_to_use = y_test
 
-    # Generate adversaries
-    msg = f"🎯 Generating {adversarial_sample_size} adversarial examples with eps={eps}"
-    print(msg, flush=True)
-    logger.info(f"Generating {adversarial_sample_size} adversarial examples with eps={eps}")
-    true_advs, false_advs = gen_adversaries(
-        classifier_model, 
-        adversarial_sample_size, 
-        images_to_use, 
-        labels_to_use, 
-        eps,
-        clip_min=clip_min,
-        clip_max=clip_max,
-        batch_size=BATCH_SIZE
-    )
-    full_advs = true_advs + false_advs
+    # Determine attack types to use
+    if attack_types and len(attack_types) > 1:
+        # Multi-attack mode: generate for each attack type
+        logger.info(f"Multi-attack mode: Generating adversaries for {len(attack_types)} attack types: {attack_types}")
+        all_results = {}
+        
+        for at_type in attack_types:
+            logger.info(f"\n{'='*60}")
+            logger.info(f"Processing attack type: {at_type.upper()}")
+            logger.info(f"{'='*60}")
+            
+            # Generate file names for this attack type
+            base_name = os.path.splitext(npz_full_file_name)[0]
+            at_full = f"{base_name}_{at_type}.npz"
+            at_true = f"{os.path.splitext(npz_true_file_name)[0]}_{at_type}.npz"
+            at_false = f"{os.path.splitext(npz_false_file_name)[0]}_{at_type}.npz"
+            
+            try:
+                # Get attack-specific parameters
+                at_params = (attack_params or {}).get(at_type, {})
+                
+                # Generate adversaries
+                msg = f"🎯 Generating {adversarial_sample_size} adversarial examples using {at_type.upper()} with eps={eps}"
+                print(msg, flush=True)
+                logger.info(msg)
+                
+                true_advs, false_advs = gen_adversaries(
+                    classifier_model, 
+                    adversarial_sample_size, 
+                    images_to_use, 
+                    labels_to_use, 
+                    eps,
+                    clip_min=clip_min,
+                    clip_max=clip_max,
+                    batch_size=BATCH_SIZE,
+                    attack_type=at_type,
+                    attack_params=at_params
+                )
+                
+                # Save results for this attack type
+                full_advs = true_advs + false_advs
+                x_test_adv_orig = np.array([x for x, x_adv, y in full_advs])
+                x_test_adv = np.array([x_adv for x, x_adv, y in full_advs])
+                y_test_adv = np.array([y for x, x_adv, y in full_advs])
+                
+                x_true_adv_orig = np.array([x for x, x_adv, y in true_advs])
+                x_true_adv = np.array([x_adv for x, x_adv, y in true_advs])
+                y_true_adv = np.array([y for x, x_adv, y in true_advs])
+                
+                x_false_adv_orig = np.array([x for x, x_adv, y in false_advs])
+                x_false_adv = np.array([x_adv for x, x_adv, y in false_advs])
+                y_false_adv = np.array([y for x, x_adv, y in false_advs])
+                
+                # Save to NPZ files
+                logger.info(f"Saving {at_type.upper()} full adversaries to {at_full}")
+                np.savez(at_full, x_test_adv_orig, x_test_adv, y_test_adv)
+                
+                logger.info(f"Saving {at_type.upper()} true adversaries to {at_true}")
+                np.savez(at_true, x_true_adv_orig, x_true_adv, y_true_adv)
+                
+                logger.info(f"Saving {at_type.upper()} false adversaries to {at_false}")
+                np.savez(at_false, x_false_adv_orig, x_false_adv, y_false_adv)
+                
+                all_results[at_type] = {
+                    'full': at_full,
+                    'true': at_true,
+                    'false': at_false,
+                    'true_count': len(true_advs),
+                    'false_count': len(false_advs)
+                }
+                
+                logger.info(f"✅ Successfully generated {at_type.upper()} adversaries: {len(true_advs)} true, {len(false_advs)} false")
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to generate {at_type.upper()} adversaries: {e}")
+                continue
+        
+        # Use first attack type results for backward compatibility
+        if all_results:
+            first_at = list(all_results.keys())[0]
+            logger.info(f"Using {first_at.upper()} results as primary output")
+            # Load first attack type results for backward compatibility
+            data = np.load(all_results[first_at]['full'])
+            x_test_adv_orig = data['arr_0']
+            x_test_adv = data['arr_1']
+            y_test_adv = data['arr_2']
+            
+            data_true = np.load(all_results[first_at]['true'])
+            x_true_adv_orig = data_true['arr_0']
+            x_true_adv = data_true['arr_1']
+            y_true_adv = data_true['arr_2']
+            
+            data_false = np.load(all_results[first_at]['false'])
+            x_false_adv_orig = data_false['arr_0']
+            x_false_adv = data_false['arr_1']
+            y_false_adv = data_false['arr_2']
+        else:
+            raise RuntimeError("Failed to generate adversaries for any attack type")
+    else:
+        # Single attack mode (original behavior)
+        single_attack = attack_type if not attack_types else attack_types[0]
+        at_params = (attack_params or {}).get(single_attack, {})
+        
+        # Generate adversaries
+        msg = f"🎯 Generating {adversarial_sample_size} adversarial examples using {single_attack.upper()} with eps={eps}"
+        print(msg, flush=True)
+        logger.info(msg)
+        true_advs, false_advs = gen_adversaries(
+            classifier_model, 
+            adversarial_sample_size, 
+            images_to_use, 
+            labels_to_use, 
+            eps,
+            clip_min=clip_min,
+            clip_max=clip_max,
+            batch_size=BATCH_SIZE,
+            attack_type=single_attack,
+            attack_params=at_params
+        )
+        full_advs = true_advs + false_advs
 
-    # Extract arrays from tuples (optimized - single pass)
-    logger.info("Extracting arrays from adversaries...")
-    x_test_adv_orig = np.array([x for x, x_adv, y in full_advs])
-    x_test_adv = np.array([x_adv for x, x_adv, y in full_advs])
-    y_test_adv = np.array([y for x, x_adv, y in full_advs])
+        # Extract arrays from tuples (optimized - single pass)
+        logger.info("Extracting arrays from adversaries...")
+        x_test_adv_orig = np.array([x for x, x_adv, y in full_advs])
+        x_test_adv = np.array([x_adv for x, x_adv, y in full_advs])
+        y_test_adv = np.array([y for x, x_adv, y in full_advs])
 
-    x_true_adv_orig = np.array([x for x, x_adv, y in true_advs])
-    x_true_adv = np.array([x_adv for x, x_adv, y in true_advs])
-    y_true_adv = np.array([y for x, x_adv, y in true_advs])
+        x_true_adv_orig = np.array([x for x, x_adv, y in true_advs])
+        x_true_adv = np.array([x_adv for x, x_adv, y in true_advs])
+        y_true_adv = np.array([y for x, x_adv, y in true_advs])
 
-    x_false_adv_orig = np.array([x for x, x_adv, y in false_advs])
-    x_false_adv = np.array([x_adv for x, x_adv, y in false_advs])
-    y_false_adv = np.array([y for x, x_adv, y in false_advs])
+        x_false_adv_orig = np.array([x for x, x_adv, y in false_advs])
+        x_false_adv = np.array([x_adv for x, x_adv, y in false_advs])
+        y_false_adv = np.array([y for x, x_adv, y in false_advs])
 
-    # Save to NPZ files
-    logger.info(f"Saving full adversaries to {npz_full_file_name}")
-    np.savez(npz_full_file_name, x_test_adv_orig, x_test_adv, y_test_adv)
-    
-    logger.info(f"Saving true adversaries to {npz_true_file_name}")
-    np.savez(npz_true_file_name, x_true_adv_orig, x_true_adv, y_true_adv)
-    
-    logger.info(f"Saving false adversaries to {npz_false_file_name}")
-    np.savez(npz_false_file_name, x_false_adv_orig, x_false_adv, y_false_adv)
+        # Save to NPZ files
+        logger.info(f"Saving full adversaries to {npz_full_file_name}")
+        np.savez(npz_full_file_name, x_test_adv_orig, x_test_adv, y_test_adv)
+        
+        logger.info(f"Saving true adversaries to {npz_true_file_name}")
+        np.savez(npz_true_file_name, x_true_adv_orig, x_true_adv, y_true_adv)
+        
+        logger.info(f"Saving false adversaries to {npz_false_file_name}")
+        np.savez(npz_false_file_name, x_false_adv_orig, x_false_adv, y_false_adv)
     
     logger.info("Adversarial example generation complete")
 

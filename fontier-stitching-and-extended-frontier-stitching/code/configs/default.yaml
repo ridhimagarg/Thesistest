@@ -1,0 +1,76 @@
+# Optimized Default Configuration for Frontier Stitching Watermarking Pipeline
+# This configuration file can be loaded using ConfigManager.load_from_yaml()
+# All values have been optimized for CIFAR-10 training and watermarking
+
+training:
+  dataset_name: "cifar10"
+  epochs: 50  # Optimized: increased from 30 for better accuracy
+  batch_size: 128
+  lr: 0.001
+  weight_decay: 0.0001  # L2 regularization to prevent overfitting
+  model_architecture: "cifar10_base_2"
+  dropout: 0.0
+  optimizer: "adam"
+  validation_split: 0.2  # Optimized: increased from 0.1
+  early_stopping_patience: 10
+  save_best_only: true
+  # Learning rate schedule
+  lr_schedule_enabled: true
+  lr_decay_factor: 0.1
+  lr_decay_epochs: [30, 40]  # Decay at epochs 30 and 40
+  # Optimizer hyperparameters
+  beta_1: 0.9
+  beta_2: 0.999
+  epsilon: 1e-7
+
+watermark:
+  eps_values: [0.01, 0.015, 0.02]  # Optimized: added 0.02 for stronger watermarks
+  sample_sizes: [10000]
+  true_adv_ratio: 0.5
+  finetuning_epochs: 15  # Optimized: increased from 10 for better watermark retention
+  num_layers_unfreeze: 1  # Optimized: changed from 10 to 1
+  watermark_batch_size: 128
+  watermark_lr: 0.0001
+  watermark_optimizer: "adam"
+  watermark_weight_decay: 0.0
+  # Learning rate schedule for watermarking
+  watermark_lr_schedule_enabled: true
+  watermark_lr_decay_factor: 0.5
+  watermark_lr_decay_epochs: [8, 12]  # Decay at epochs 8 and 12
+  # Multi-attack support
+  attack_types: ["fgsm"]  # Options: ["fgsm", "pgd", "bim", "carlini_l2", "deepfool", etc.]
+  use_multiple_attacks: false  # If true, generates watermarks with all attack_types
+  attack_params:  # Attack-specific parameters
+    pgd:
+      eps_step: 0.001
+      max_iter: 10
+    bim:
+      eps_step: 0.001
+      max_iter: 10
+    carlini_l2:
+      confidence: 0.0
+      learning_rate: 0.01
+      max_iter: 10
+
+attack:
+  query_budgets: [250, 500, 1000, 5000, 10000, 20000]
+  attacker_architecture: "cifar10_base_2"
+  epochs_extract: 50
+  attack_batch_size: 128
+  attack_lr: 0.001  # Optimized: changed from 0.01
+  attack_optimizer: "adam"
+  attack_weight_decay: 0.0
+  dropout: 0.0
+
+# Global settings
+output_dir: "../results"
+model_dir: "../models"
+data_dir: "../data"
+seed: 42  # Optimized: changed from 0 to 42 (more standard)
+use_gpu: true
+gpu_memory_growth: true
+mixed_precision: false  # Set to true for faster training on GPU
+parallel_processing: false  # Set to true for parallel adversarial generation
+max_workers: null  # Auto-detect CPU cores
+deterministic: false  # Set to true for full reproducibility (slower)
+

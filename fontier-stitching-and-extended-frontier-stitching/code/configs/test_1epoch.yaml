@@ -1,0 +1,65 @@
+# Test Configuration with Minimal Values for Quick Verification
+# This config tests all functionality with minimal epochs and values
+
+training:
+  dataset_name: "cifar10"
+  epochs: 1  # Minimal: 1 epoch for quick test
+  batch_size: 64  # Smaller batch size for faster training
+  lr: 0.001
+  weight_decay: 0.0001
+  model_architecture: "cifar10_base_2"
+  dropout: 0.0
+  optimizer: "adam"
+  validation_split: 0.2
+  early_stopping_patience: 10
+  save_best_only: true
+  # Learning rate schedule
+  lr_schedule_enabled: false  # Disable for quick test
+  lr_decay_factor: 0.1
+  lr_decay_epochs: [30, 40]
+  # Optimizer hyperparameters
+  beta_1: 0.9
+  beta_2: 0.999
+  epsilon: 1e-7
+
+watermark:
+  eps_values: [0.01]  # Single epsilon for quick test
+  sample_sizes: [50]  # Minimal sample size for quick test
+  true_adv_ratio: 0.5
+  finetuning_epochs: 1  # Minimal: 1 epoch for quick test
+  num_layers_unfreeze: 1
+  watermark_batch_size: 64  # Smaller batch size
+  watermark_lr: 0.0001
+  watermark_optimizer: "adam"
+  watermark_weight_decay: 0.0
+  # Learning rate schedule for watermarking
+  watermark_lr_schedule_enabled: false  # Disable for quick test
+  watermark_lr_decay_factor: 0.5
+  watermark_lr_decay_epochs: [8, 12]
+  # Multi-attack support
+  attack_types: ["fgsm"]  # Single attack for quick test
+  use_multiple_attacks: false
+  attack_params: {}
+
+attack:
+  query_budgets: [50]  # Minimal query budget for quick test
+  attacker_architecture: "cifar10_base_2"
+  epochs_extract: 1  # Minimal: 1 epoch for quick test
+  attack_batch_size: 64  # Smaller batch size
+  attack_lr: 0.001
+  attack_optimizer: "adam"
+  attack_weight_decay: 0.0
+  dropout: 0.0
+
+# Global settings
+output_dir: "../results"
+model_dir: "../models"
+data_dir: "../data"
+seed: 42
+use_gpu: true
+gpu_memory_growth: true
+mixed_precision: false
+parallel_processing: false
+max_workers: null
+deterministic: false
+

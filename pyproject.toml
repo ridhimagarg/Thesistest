@@ -12,8 +12,8 @@ python = "^3.9"
 tensorflow-metal = "*"  # Metal GPU acceleration for macOS (Apple Silicon)
 # tensorflow-addons - Optional, version 0.23.0 doesn't have wheels for Python 3.12
 # tensorflow-addons = "*"
-# tensorflow-datasets - Optional, depends on tensorflow-metadata which conflicts with TF 2.20
-# tensorflow-datasets = "*"
+# tensorflow-datasets - Required for SVHN, STL-10, and EuroSAT datasets
+tensorflow-datasets = "*"
 tensorflow-estimator = "*"
 # tensorflow-io-gcs-filesystem - Optional, not compatible with Python 3.12
 # tensorflow-io-gcs-filesystem = "*"

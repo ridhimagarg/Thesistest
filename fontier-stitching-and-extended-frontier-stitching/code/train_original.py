@@ -17,12 +17,23 @@ import os
 import models
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import mlflow
+# Optional MLflow import
+try:
+    import mlflow
+    MLFLOW_AVAILABLE = True
+except ImportError:
+    MLFLOW_AVAILABLE = False
+    mlflow = None
+
 from datetime import datetime
 from utils.data_utils import DataManager
 from utils.performance_utils import enable_mixed_precision, optimize_gpu_memory
 from utils.experiment_logger import ExperimentLogger, log_reproducibility_info
 import time
+import logging
+
+# Set up logger for MLflow warnings
+mlflow_logger = logging.getLogger("mlflow")
 
 # GPU Configuration - uncomment to disable GPU
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -48,9 +59,20 @@ if len(physical_devices) > 0:
 else:
     print("ℹ️  No GPU detected, using CPU")
 
-mlflow.set_tracking_uri("sqlite:///../mlflow.db")
-# mlflow.set_tracking_uri("file:///../mlruns")
-mlflow.set_experiment("frontier-stiching-original")
+# Initialize MLflow with error handling
+mlflow_enabled = False
+if MLFLOW_AVAILABLE:
+    try:
+        mlflow.set_tracking_uri("sqlite:///../mlflow.db")
+        # mlflow.set_tracking_uri("file:///../mlruns")
+        mlflow.set_experiment("frontier-stiching-original")
+        mlflow_enabled = True
+    except Exception as e:
+        print(f"⚠️  Warning: MLflow initialization failed: {e}")
+        print("   Continuing without MLflow logging...")
+        mlflow_enabled = False
+else:
+    print("ℹ️  MLflow not available, continuing without MLflow logging...")
 
 now = datetime.now().strftime("%d-%m-%Y")
 
@@ -124,7 +146,45 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
     # Log reproducibility info
     log_reproducibility_info(output_dir=str(exp_logger.experiment_dir), seed=0)
     
-    with mlflow.start_run(run_name=experiment_name):
+    # Helper function to safely log to MLflow
+    def safe_mlflow_log(func, *args, **kwargs):
+        """Safely execute MLflow logging functions with error handling."""
+        if not mlflow_enabled or mlflow is None:
+            return
+        try:
+            func(*args, **kwargs)
+        except Exception as e:
+            print(f"⚠️  Warning: MLflow logging failed: {e}")
+            print("   Continuing without MLflow logging...")
+    
+    # Context manager for MLflow run with error handling
+    class SafeMLflowRun:
+        """Context manager for MLflow runs that handles errors gracefully."""
+        def __init__(self, run_name):
+            self.run_name = run_name
+            self.run_active = False
+            
+        def __enter__(self):
+            if mlflow_enabled and mlflow is not None:
+                try:
+                    mlflow.start_run(run_name=self.run_name)
+                    self.run_active = True
+                except Exception as e:
+                    print(f"⚠️  Warning: Failed to start MLflow run: {e}")
+                    print("   Continuing without MLflow logging...")
+                    self.run_active = False
+            return self
+            
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            if self.run_active and mlflow_enabled and mlflow is not None:
+                try:
+                    mlflow.end_run()
+                except Exception as e:
+                    print(f"⚠️  Warning: Failed to end MLflow run: {e}")
+            return False  # Don't suppress exceptions
+    
+    # Use safe MLflow run context manager
+    with SafeMLflowRun(experiment_name):
         params = {"dataset_name": dataset_name, "epochs_pretrain": epochs,
                   "model_architecture": model_architecture, "optimizer": str(optimizer), "lr": lr,
                   "weight_decay": weight_decay, "dropout": dropout}
@@ -152,14 +212,15 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
             model_name, model = models_mapping[model_architecture]().call(input_shape)
         else:
             if dropout:
-                model_name, model = models_mapping[model_architecture](input_shape, dropout)
+                model_name, model = models_mapping[model_architecture](input_shape, dropout, num_classes=num_classes)
             else:
-                model_name, model = models_mapping[model_architecture]()
+                model_name, model = models_mapping[model_architecture](num_classes=num_classes)
 
         params["model_detail_architecture_name"] = model_name
 
         for param, param_val in params.items():
-            mlflow.log_param(param, param_val)
+            if mlflow is not None:
+                safe_mlflow_log(mlflow.log_param, param, param_val)
 
         print(model.summary())
         model.compile(loss=tf.keras.losses.CategoricalCrossentropy(), optimizer=optimizer, metrics=['accuracy'])
@@ -264,8 +325,10 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
         plt.ylabel("Loss")
         plt.legend()
         plt.savefig(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalLoss.png"))
-        mlflow.log_artifact(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalLoss.png"),
-                            "OriginalinLoss.png")
+        if mlflow is not None:
+            safe_mlflow_log(mlflow.log_artifact, 
+                           os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalLoss.png"),
+                           "OriginalinLoss.png")
 
         plt.figure()
         plt.plot(list(range(epochs)), train_acc_pretrain, label="Train acc_" + dataset_name, marker='o',
@@ -276,13 +339,23 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
         plt.ylabel("Accuracy")
         plt.legend()
         plt.savefig(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalAcc.png"))
-        mlflow.log_artifact(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalAcc.png"),
-                            "OriginalAcc.png")
-        mlflow.log_artifact(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "_" + model_name + "_logs.txt"),
-                            "logs.txt")
+        if mlflow is not None:
+            safe_mlflow_log(mlflow.log_artifact,
+                           os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalAcc.png"),
+                           "OriginalAcc.png")
+            safe_mlflow_log(mlflow.log_artifact,
+                           os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "_" + model_name + "_logs.txt"),
+                           "logs.txt")
         
         # Save all ExperimentLogger data
         exp_logger.save_all()
+        
+        # Create LaTeX table from training history if available
+        if exp_logger.training_history:
+            latex_table = exp_logger.create_latex_table("training_results.tex")
+            if latex_table:
+                print(f"✅ LaTeX table saved to: {exp_logger.experiment_dir / 'tables' / 'training_results.tex'}")
+        
         print(f"✅ Comprehensive experiment data saved to: {exp_logger.experiment_dir}")
 
         return model

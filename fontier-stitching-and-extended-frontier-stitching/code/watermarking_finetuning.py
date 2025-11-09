@@ -211,7 +211,7 @@ class normal_data_acc_callback(tf.keras.callbacks.Callback):
 
 def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_path, epochs, dropout, batch_size,
                          optimizer, lr, weight_decay, num_layers_unfreeze, lr_schedule_enabled=True,
-                         lr_decay_factor=0.5, lr_decay_epochs=[8, 12]):
+                         lr_decay_factor=0.5, lr_decay_epochs=[8, 12], results_path=None):
 
     """
     Main idea
@@ -226,6 +226,36 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
         dataset_name, adv_data_path_numpy)
 
     print(model_to_finetune_path)
+    
+    # Set RESULTS_PATH if not provided
+    if results_path is None:
+        now = datetime.now().strftime("%d-%m-%Y")
+        RESULTS_PATH = f"../results/finetuned_finetuning_{now}"
+    else:
+        RESULTS_PATH = results_path
+    
+    # Set other paths (needed for file operations)
+    DATA_PATH = "../data"
+    MODEL_PATH = f"../models/finetuned_finetuning_{datetime.now().strftime('%d-%m-%Y')}"
+    LOSS_FOLDER = "losses"
+    
+    # Extract which_adv from adversarial path (e.g., ../data/fgsm/cifar10/true/... -> 'true')
+    adv_path_normalized = adv_data_path_numpy.replace("\\", "/")
+    path_parts = adv_path_normalized.split("/")
+    which_adv = 'true'  # Default
+    if 'true' in path_parts:
+        which_adv = 'true'
+    elif 'false' in path_parts:
+        which_adv = 'false'
+    elif 'full' in path_parts:
+        which_adv = 'full'
+    
+    # Create directories if they don't exist
+    if not os.path.exists(os.path.join(RESULTS_PATH, LOSS_FOLDER, which_adv)):
+        os.makedirs(os.path.join(RESULTS_PATH, LOSS_FOLDER, which_adv), exist_ok=True)
+    
+    if not os.path.exists(os.path.join(MODEL_PATH, which_adv)):
+        os.makedirs(os.path.join(MODEL_PATH, which_adv), exist_ok=True)
     
     # Initialize ExperimentLogger for comprehensive logging
     exp_logger = ExperimentLogger("watermark_finetuning", output_dir=RESULTS_PATH)
@@ -432,6 +462,13 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
     
     # Save all ExperimentLogger data
     exp_logger.save_all()
+    
+    # Create LaTeX table from training history if available
+    if exp_logger.training_history:
+        latex_table = exp_logger.create_latex_table("watermarking_results.tex")
+        if latex_table:
+            print(f"✅ LaTeX table saved to: {exp_logger.experiment_dir / 'tables' / 'watermarking_results.tex'}")
+    
     print(f"✅ Comprehensive experiment data saved to: {exp_logger.experiment_dir}")
     # mlflow.log_artifact(os.path.join(RESULTS_PATH, LOSS_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
     #                                  dataset_name + "_" + str(epochs) + "_" + model_name +

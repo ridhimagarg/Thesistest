@@ -61,6 +61,10 @@ class WatermarkConfig:
     watermark_lr_schedule_enabled: bool = True
     watermark_lr_decay_factor: float = 0.5
     watermark_lr_decay_epochs: List[int] = field(default_factory=lambda: [8, 12])
+    # Multi-attack support
+    attack_types: List[str] = field(default_factory=lambda: ['fgsm'])  # ['fgsm', 'pgd', 'bim', etc.]
+    use_multiple_attacks: bool = False  # If True, generate watermarks with all attack_types
+    attack_params: Dict[str, Dict[str, Any]] = field(default_factory=dict)  # Attack-specific parameters
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert config to dictionary."""
