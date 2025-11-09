@@ -7,33 +7,53 @@ Introduction:
 """
 
 import warnings
-
-warnings.filterwarnings('ignore')
-from keras.models import load_model
-import tensorflow as tf
-
-import matplotlib.pyplot as plt
-
-import numpy as np
-import random
-import keras
-from keras.datasets import mnist, cifar10
 import argparse
-import mlconfig
-import models
-# import mlflow
-from datetime import datetime
 import os
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import LearningRateScheduler
-from keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import Callback
+import sys
 import math
 import json
 import time
+import random
+from datetime import datetime
+from typing import Tuple, List, Dict, Any
 
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.datasets import mnist, cifar10
+from tensorflow.keras.models import load_model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.callbacks import LearningRateScheduler, Callback
+import matplotlib.pyplot as plt
+import models
+from utils.data_utils import DataManager
+from utils.performance_utils import enable_mixed_precision, optimize_gpu_memory
+from utils.experiment_logger import ExperimentLogger, log_reproducibility_info
 
+warnings.filterwarnings('ignore')
+
+# GPU Configuration - uncomment to disable GPU
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+# Configure GPU (Metal on macOS, CUDA on Linux/Windows)
+physical_devices = tf.config.list_physical_devices('GPU')
+if len(physical_devices) > 0:
+    try:
+        # For Metal GPU on macOS, memory growth is not needed but we can still configure it
+        # Metal handles memory management automatically
+        for gpu in physical_devices:
+            # Memory growth is mainly for CUDA GPUs, but safe to set for Metal too
+            try:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            except AttributeError:
+                # Metal GPU doesn't support memory_growth, which is fine
+                pass
+        print(f"✅ GPU detected: {len(physical_devices)} GPU(s) available")
+        print(f"   Using: {physical_devices[0].name}")
+    except RuntimeError as e:
+        print(f"⚠️  GPU configuration error: {e}")
+        print("   Falling back to CPU")
+else:
+    print("ℹ️  No GPU detected, using CPU")
 
 class NumpyEncoder(json.JSONEncoder):
     """ Custom encoder for numpy data types """
@@ -45,94 +65,45 @@ class NumpyEncoder(json.JSONEncoder):
 
 def data_preprocessing(dataset_name, adv_data_path_numpy):
     """
-            Main idea
-            -------
-            This is the function which preprocess the data for the modelling.
-
-            Args:
-            ---
-            dataset_name: name of the dataset.
-
-            Future work:
-            -----------
-            This function for now is copied in multiple files but can be modified such that it can be exported.
-            It can be optimized more easily.
-
+    Preprocess data for watermarking with extended frontier stitching.
+    
+    This function uses the centralized DataManager for basic loading, 
+    then performs custom splitting and combination for watermarking.
+    
+    Args:
+        dataset_name: Name of the dataset.
+        adv_data_path_numpy: Path to adversarial data file.
+        
+    Returns:
+        Tuple containing multiple data splits for watermarking training.
     """
-    if dataset_name == 'mnist':
-        (x_train, y_train), (x_test, y_test) = mnist.load_data()
-        img_rows, img_cols, num_channels = 28, 28, 1
-        num_classes = 10
-
-    elif dataset_name == 'cifar10':
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        img_rows, img_cols, num_channels = 32, 32, 3
-        num_classes = 10
-
-    elif dataset_name == "cifar10resnet":
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        img_rows, img_cols, num_channels = 32, 32, 3
-        num_classes = 10
-
-    elif dataset_name == "cifar10resnet_255_preprocess":
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        img_rows, img_cols, num_channels = 32, 32, 3
-        num_classes = 10
-
-    else:
-        raise ValueError('Invalid dataset name')
-
-    idx = np.random.randint(x_train.shape[0], size=len(x_train))
-    x_train = x_train[idx, :]
-    y_train = y_train[idx]
-
-    # specify input dimensions of each image
-    input_shape = (img_rows, img_cols, num_channels)
-
-    # reshape x_train and x_test
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, num_channels)
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, num_channels)
-
-    # convert class labels (from digits) to one-hot encoded vectors
-    y_train = keras.utils.to_categorical(y_train, num_classes)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
-
-    # convert int to float
-    x_train = x_train.astype('float32')
-    x_test = x_test.astype('float32')
-
-    # normalise
-    if dataset_name != 'cifar10resnet':
-        x_train /= 255
-        x_test /= 255
-
-    else:
-
-        mean = [125.3, 123.0, 113.9]
-        std = [63.0, 62.1, 66.7]
-
-        for i in range(3):
-            x_train[:, :, :, i] = (x_train[:, :, :, i] - mean[i]) / std[i]
-            x_test[:, :, :, i] = (x_test[:, :, :, i] - mean[i]) / std[i]
-
-    # Load adv dataset
-    adv = np.load(adv_data_path_numpy)
-    x_adv, y_adv = adv['arr_1'], adv['arr_2']
+    # Use centralized DataManager for basic data loading
+    x_train, y_train, x_test, y_test, x_adv, y_adv, input_shape = DataManager.load_and_preprocess_with_adversarial(
+        dataset_name=dataset_name,
+        adv_data_path=adv_data_path_numpy
+    )
+    
+    num_classes = DataManager.get_dataset_info(dataset_name)['num_classes']
+    
     print(x_adv.shape)
     print(y_adv.shape)
 
+    # Split adversarial data into train/test (90/10 split)
     idx = np.random.randint(x_adv.shape[0], size=x_adv.shape[0])
     x_train_adv = x_adv[idx[:int(len(idx) * 0.9)]]
     y_train_adv = y_adv[idx[:int(len(idx) * 0.9)]]
     x_test_adv = x_adv[idx[int(len(idx) * 0.9):]]
     y_test_adv = y_adv[idx[int(len(idx) * 0.9):]]
 
+    # Select matching amount of regular training data
     x_train_selected = x_train[:int(len(idx) * 0.9)]
     y_train_selected = y_train[:int(len(idx) * 0.9)]
 
+    # Combine regular and adversarial data
     x_combined = np.concatenate((x_train_selected, x_train_adv), axis=0)
     y_combined = np.concatenate((y_train_selected, y_train_adv), axis=0)
 
+    # Create combined train/val splits
     x_combined_train = np.concatenate(
         (x_train[: int(len(x_train_selected) * 0.9)], x_train_adv[: int(len(x_train_adv) * 0.9)]),
         axis=0)
@@ -218,7 +189,7 @@ class TimeHistory(Callback):
         self.total_time = time.time() - self.total_time
 
 
-class normal_data_acc_callback(keras.callbacks.Callback):
+class normal_data_acc_callback(tf.keras.callbacks.Callback):
     """
     helper function for normal_data_acc_callback after each epoch.
     since we are finetuning over the adversaries/watermark set, to track for the normal test data, we are using this callback.
@@ -239,7 +210,8 @@ class normal_data_acc_callback(keras.callbacks.Callback):
 
 
 def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_path, epochs, dropout, batch_size,
-                         optimizer, lr, weight_decay, num_layers_unfreeze):
+                         optimizer, lr, weight_decay, num_layers_unfreeze, lr_schedule_enabled=True,
+                         lr_decay_factor=0.5, lr_decay_epochs=[8, 12]):
 
     """
     Main idea
@@ -254,11 +226,36 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
         dataset_name, adv_data_path_numpy)
 
     print(model_to_finetune_path)
-
+    
+    # Initialize ExperimentLogger for comprehensive logging
+    exp_logger = ExperimentLogger("watermark_finetuning", output_dir=RESULTS_PATH)
+    
+    # Log reproducibility info
+    log_reproducibility_info(output_dir=str(exp_logger.experiment_dir), seed=0)
+    
+    # Log hyperparameters
+    exp_logger.log_hyperparameters(
+        dataset_name=dataset_name,
+        epochs=epochs,
+        batch_size=batch_size,
+        optimizer=str(optimizer),
+        lr=lr,
+        weight_decay=weight_decay,
+        dropout=dropout,
+        num_layers_unfreeze=num_layers_unfreeze,
+        adv_data_path=adv_data_path_numpy
+    )
 
     model = load_model(model_to_finetune_path, compile=False)
 
     print(model.summary())
+    
+    # Log model size before watermarking
+    total_params_before = model.count_params()
+    model_size_mb_before = total_params_before * 4 / (1024 * 1024)
+    print(f"📊 Model size before watermarking: {total_params_before:,} parameters ({model_size_mb_before:.2f} MB)")
+    exp_logger.metrics['model_size_before_params'] = int(total_params_before)
+    exp_logger.metrics['model_size_before_mb'] = float(model_size_mb_before)
 
     model_name = model_to_finetune_path.replace("\\", "/").split("/")[-2]
 
@@ -285,11 +282,19 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
 
     time_callback = TimeHistory()
 
-    lrate = LearningRateScheduler(learning_rate_schedule)
-    # lrate = LearningRateScheduler(scheduler)
-    opt = Adam(learning_rate=0.0001)
+    # Optimized learning rate scheduler
+    if lr_schedule_enabled:
+        lrate = LearningRateScheduler(
+            lambda e: learning_rate_schedule(e, initial_lr=lr, decay_factor=lr_decay_factor, decay_epochs=lr_decay_epochs),
+            verbose=1
+        )
+    else:
+        lrate = LearningRateScheduler(learning_rate_schedule, verbose=1)
+    
+    # Use provided learning rate instead of hardcoded value
+    opt = Adam(learning_rate=lr)
 
-    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=opt, metrics=['accuracy'])
+    model.compile(loss=tf.keras.losses.CategoricalCrossentropy(), optimizer=opt, metrics=['accuracy'])
 
     file1 = open(os.path.join(RESULTS_PATH, LOSS_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
                               dataset_name + "_" + str(epochs) + "_" + model_name +
@@ -303,7 +308,11 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
     CHECKPOINT_FILEPATH = os.path.join(MODEL_PATH, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
                                        dataset_name + "_" + str(epochs) + "_" + str(epochs) + "_" + model_name +
                                        adv_data_path_numpy.replace("\\", "/").split("/")[-1].split(".npz")[0],
-                                       "Victim_checkpoint_best.h5")
+                                       "Victim_checkpoint_best.keras")
+
+    # Ensure the directory exists before creating the checkpoint callback
+    checkpoint_dir = os.path.dirname(CHECKPOINT_FILEPATH)
+    os.makedirs(checkpoint_dir, exist_ok=True)
 
     ## creating the callback for checkpointing.
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -337,17 +346,37 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
     acc = model.evaluate(x_train_adv, y_train_adv)
     print(f"Finetuned model train adv acc: {acc}")
     file1.write(f"Finetuned model train adv acc: {acc}\n")
+    exp_logger.metrics['watermark_train_acc'] = float(acc[1])
 
     ## evaluating over the test adversary data
     acc = model.evaluate(x_test_adv, y_test_adv)
     print(f"Finetuned model test adv acc: {acc}")
     file1.write(f"Finetuned model test adv acc: {acc}\n")
+    exp_logger.metrics['watermark_test_acc'] = float(acc[1])
+    
+    # Log model size after watermarking
+    total_params_after = model.count_params()
+    model_size_mb_after = total_params_after * 4 / (1024 * 1024)
+    print(f"📊 Model size after watermarking: {total_params_after:,} parameters ({model_size_mb_after:.2f} MB)")
+    exp_logger.metrics['model_size_after_params'] = int(total_params_after)
+    exp_logger.metrics['model_size_after_mb'] = float(model_size_mb_after)
+    exp_logger.metrics['model_size_change_mb'] = float(model_size_mb_after - model_size_mb_before)
 
     train_acc_watermark = history.history["accuracy"]
     val_acc_watermark = history.history["val_accuracy"]
     train_loss_watermark = history.history["loss"]
     val_loss_watermark = history.history["val_loss"]
-    lr = history.history["lr"]
+    
+    # Learning rate might not be logged, so handle it gracefully
+    if "lr" in history.history:
+        lr = history.history["lr"]
+    elif "learning_rate" in history.history:
+        lr = history.history["learning_rate"]
+    else:
+        # If not logged, create a list with the initial learning rate
+        print("⚠️  Warning: Learning rate not found in history, using initial LR")
+        lr = [0.0001] * epochs  # Use the initial learning rate from the optimizer
+    
     normal_test_acc = history.params["test_acc_"]
         
     loss_acc_dict["train_acc"] = train_acc_watermark
@@ -360,18 +389,35 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
     with open(dict_file, 'w') as file:
         json.dump(loss_acc_dict, file, cls=NumpyEncoder)               
 
-    for idx, (train_loss, train_acc, val_loss, val_acc, lr, normal_acc, epoch_time) in enumerate(
+    # Log training history to ExperimentLogger
+    for idx, (train_loss, train_acc, val_loss, val_acc, lr_val, normal_acc, epoch_time) in enumerate(
             zip(train_loss_watermark, train_acc_watermark, val_loss_watermark, val_acc_watermark, lr, normal_test_acc, time_callback.times)):
         file1.write(
-            f'Epoch: {idx + 1}, Train Loss: {train_loss:.3f} Train Acc: {train_acc:.3f} Val Loss: {val_loss:.3f} Val Acc: {val_acc:.3f} with lr: {lr:.7f} and normal test acc: {normal_acc:.3f} and epoch time :{epoch_time} seconds \n')
+            f'Epoch: {idx + 1}, Train Loss: {train_loss:.3f} Train Acc: {train_acc:.3f} Val Loss: {val_loss:.3f} Val Acc: {val_acc:.3f} with lr: {lr_val:.7f} and normal test acc: {normal_acc:.3f} and epoch time :{epoch_time} seconds \n')
         file1.write("\n")
+        
+        # Log to ExperimentLogger
+        exp_logger.log_training_epoch(
+            epoch=idx,
+            train_loss=train_loss,
+            train_acc=train_acc,
+            val_loss=val_loss,
+            val_acc=val_acc,
+            learning_rate=lr_val,
+            epoch_time=epoch_time,
+            test_acc=normal_acc  # Additional metric
+        )
 
     FINAL_CHECKPOINT_FILEPATH = os.path.join(MODEL_PATH, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
                                              "final_" + dataset_name + "_" + str(epochs) + "_" + str(
                                                  epochs) + "_" + model_name +
                                              adv_data_path_numpy.replace("\\", "/").split("/")[-1].split(".npz")[0],
-                                             "Victim_checkpoint_final.h5")
+                                             "Victim_checkpoint_final.keras")
 
+    # Ensure the directory exists before saving
+    final_checkpoint_dir = os.path.dirname(FINAL_CHECKPOINT_FILEPATH)
+    os.makedirs(final_checkpoint_dir, exist_ok=True)
+    
     model.save(FINAL_CHECKPOINT_FILEPATH)
 
     model = load_model(CHECKPOINT_FILEPATH)
@@ -379,6 +425,14 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
     acc_adv = model.evaluate(x_adv, y_adv)[1]
     print("Best after loading the model adv :", acc_adv)
     file1.write(f"Best after loading the model adv : {acc_adv}")
+    exp_logger.metrics['watermark_acc_best_checkpoint'] = float(acc_adv)
+    
+    # Log final model metrics
+    exp_logger.log_model_metrics(model=model, x_test=x_test, y_test=y_test, prefix="final_")
+    
+    # Save all ExperimentLogger data
+    exp_logger.save_all()
+    print(f"✅ Comprehensive experiment data saved to: {exp_logger.experiment_dir}")
     # mlflow.log_artifact(os.path.join(RESULTS_PATH, LOSS_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
     #                                  dataset_name + "_" + str(epochs) + "_" + model_name +
     #                                  adv_data_path_numpy.replace("\\", "/").split("/")[-1].split(".npz")[
@@ -434,20 +488,35 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", type=str, default="configs/watermarking_finetuning.yaml")
-    args = parser.parse_args()
-    print(args)
-    config = mlconfig.load(args.config)
+    # Optimized configuration values for watermarking
+    dataset_name = "cifar10"
+    epochs = 15  # Increased from 10 for better watermark retention
+    batch_size = 128
+    model_to_finetune_path = "../models/original_09-11-2025/cifar10_30_CIFAR10_BASE_2/Original_checkpoint_best.keras"
+    dropout = 0
+    optimizer = "adam"
+    lr = 0.0001  # Lower LR for fine-tuning
+    weight_decay = 0
+    num_layers_unfreeze = 1
+    lr_schedule_enabled = True  # Enable learning rate decay
+    lr_decay_factor = 0.5
+    lr_decay_epochs = [8, 12]  # Decay at epochs 8 and 12
+    
+    # Performance optimizations
+    use_mixed_precision = os.getenv('USE_MIXED_PRECISION', 'false').lower() == 'true'
+    
+    # Optimize GPU memory
+    optimize_gpu_memory()
+    
+    # Enable mixed precision if requested
+    if use_mixed_precision:
+        enable_mixed_precision('mixed_float16')
+    which_adv = "true"
 
     seed = 0
     random.seed(seed)
     np.random.seed(seed)
     tf.compat.v1.random.set_random_seed(seed)
-
-    # mlflow.set_tracking_uri("sqlite:///../mlflow.db")
-    # mlflow.set_tracking_uri("file:///../mlruns")
-    # mlflow.set_experiment("frontier-stiching-watermarking")
 
     now = datetime.now().strftime("%d-%m-%Y")
 
@@ -456,32 +525,39 @@ if __name__ == "__main__":
     MODEL_PATH = f"../models/finetuned_finetuning_{now}"
     LOSS_FOLDER = "losses"
 
-    if not os.path.exists(os.path.join(RESULTS_PATH, LOSS_FOLDER, config.which_adv)):
-        os.makedirs(os.path.join(RESULTS_PATH, LOSS_FOLDER, config.which_adv))
+    if not os.path.exists(os.path.join(RESULTS_PATH, LOSS_FOLDER, which_adv)):
+        os.makedirs(os.path.join(RESULTS_PATH, LOSS_FOLDER, which_adv))
 
-    if not os.path.exists(os.path.join(MODEL_PATH, config.which_adv)):
-        os.makedirs(os.path.join(MODEL_PATH, config.which_adv))
+    if not os.path.exists(os.path.join(MODEL_PATH, which_adv)):
+        os.makedirs(os.path.join(MODEL_PATH, which_adv))
 
-    dataset_name = config.dataset_name
-    dataset_path = os.path.join(DATA_PATH, "fgsm", dataset_name, config.which_adv)
+    dataset_path = os.path.join(DATA_PATH, "fgsm", dataset_name, which_adv)
     experiment_name = dataset_name + "Frontier_Watermarking_Finetuning"
 
-    # with mlflow.start_run(run_name=experiment_name):
+    # Check if adversarial examples directory exists
+    if not os.path.exists(dataset_path):
+        print(f"❌ Error: Adversarial examples directory not found: {dataset_path}")
+        print(f"\n📋 You need to run Step 2 first to generate adversarial examples:")
+        print(f"   poetry run python frontier-stitching.py")
+        print(f"\n   This will create the directory and generate adversarial examples.")
+        sys.exit(1)
 
-    params = {"dataset_name": dataset_name, "epochs": config.epochs,
-                "optimizer": config.optimizer, "lr": config.lr,
-                "weight_decay": config.weight_decay, "dropout": config.dropout,
-                "num_layers_unfreeze": config.num_layers_unfreeze, }
+    params = {"dataset_name": dataset_name, "epochs": epochs,
+                "optimizer": optimizer, "lr": lr,
+                "weight_decay": weight_decay, "dropout": dropout,
+                "num_layers_unfreeze": num_layers_unfreeze, }
 
     for adv_path in os.listdir(dataset_path):
-        if "fgsm_0.025_10000" in adv_path and "capacity" not in adv_path and "samples" not in adv_path:
+        if ("fgsm_0.01_10000" in adv_path or "fgsm_0.015_10000" in adv_path) and "capacity" not in adv_path and "samples" not in adv_path:
             adv_data_path_numpy = os.path.join(dataset_path, adv_path)
             print(adv_data_path_numpy)
-            num_layers_unfreeze = config.num_layers_unfreeze
 
-            watermark_finetuning(dataset_name, adv_data_path_numpy, config.model_to_finetune_path, config.epochs,
-                                    config.dropout, config.batch_size, config.optimizer, config.lr,
-                                    config.weight_decay, num_layers_unfreeze)
+            watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_path, epochs,
+                                    dropout, batch_size, optimizer, lr,
+                                    weight_decay, num_layers_unfreeze,
+                                    lr_schedule_enabled=lr_schedule_enabled,
+                                    lr_decay_factor=lr_decay_factor,
+                                    lr_decay_epochs=lr_decay_epochs)
 
 
 

@@ -15,13 +15,8 @@ import models_new as models
 import mlconfig
 import tensorflow as tf
 import matplotlib.pyplot as plt
-import mlflow
 from datetime import datetime
 from keras.callbacks import LearningRateScheduler, ReduceLROnPlateau
-
-mlflow.set_tracking_uri("sqlite:///mlflow.db")
-#mlflow.set_tracking_uri("file:///../mlruns")
-mlflow.set_experiment("ewe-original")
 
 now = datetime.now().strftime("%d-%m-%Y")
 
@@ -105,13 +100,9 @@ def lr_schedule(epoch):
 
 def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=128, optimizer="adam", lr=0.001, weight_decay=0.00):
 
-    experiment_name = dataset_name + "EWE_Orignal"
-    with mlflow.start_run(run_name=experiment_name):
-
-        params = {"dataset_name": dataset_name, "epochs_pretrain": epochs,
-                  "model_architecture": model_architecture , "optimizer": str(optimizer), "lr": lr,
-                  "weight_decay": weight_decay, "dropout": dropout}
-
+    params = {"dataset_name": dataset_name, "epochs_pretrain": epochs,
+              "model_architecture": model_architecture , "optimizer": str(optimizer), "lr": lr,
+              "weight_decay": weight_decay, "dropout": dropout}
 
     #    models_mapping = {"resnet34": models.ResNet34, "conv_2": models.Plain_2_conv_Keras, "small": models.Small,
     #                      "mnist_l2": models.MNIST_L2,
@@ -121,93 +112,88 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
     #                      "cifar10_base_drp03": models.CIFAR10_BASE,
     #                      "cifar10_base_2": models.CIFAR10_BASE_2}
 
-        models_mapping = {"mnist_l2": models.MNIST_L2, "mnist_l2_ewe": models.MNIST_L2_EWE, "cifar10_base_2": models.CIFAR10_BASE_2}
+    models_mapping = {"mnist_l2": models.MNIST_L2, "mnist_l2_ewe": models.MNIST_L2_EWE, "cifar10_base_2": models.CIFAR10_BASE_2}
 
-        x_train, y_train, x_test, y_test, input_shape, num_classes = data_preprocessing(dataset_name)
+    x_train, y_train, x_test, y_test, input_shape, num_classes = data_preprocessing(dataset_name)
 
-        print(x_train.shape, y_train.shape, x_test.shape)
+    print(x_train.shape, y_train.shape, x_test.shape)
 
-        if model_architecture == "resnet34":
-            model_name, model = models_mapping[model_architecture]().call(input_shape)
+    if model_architecture == "resnet34":
+        model_name, model = models_mapping[model_architecture]().call(input_shape)
+    else:
+        if dropout:
+            model_name, model = models_mapping[model_architecture](input_shape, dropout)
         else:
-            if dropout:
-                model_name, model = models_mapping[model_architecture](input_shape, dropout)
-            else:
-                model_name, model = models_mapping[model_architecture]()
+            model_name, model = models_mapping[model_architecture]()
 
-        params["model_detail_architecture_name"] = model_name
-        for param, param_val in params.items():
-            mlflow.log_param(param, param_val)
+    params["model_detail_architecture_name"] = model_name
 
-        print(model.summary())
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=optimizer, metrics=['accuracy'])
+    print(model.summary())
+    model.compile(loss=keras.losses.categorical_crossentropy, optimizer=optimizer, metrics=['accuracy'])
 
-        CHECKPOINT_FOLDER = os.path.join(MODEL_PATH, dataset_name + "_" + str(epochs) + "_" + model_name)
-        #CHECKPOINT_FILEPATH = os.path.join(MODEL_PATH, dataset_name + "_" + str(epochs) + "_" + model_name,
-        #                                   "Original_checkpoint-{epoch:02d}-{val_loss:.2f}-{val_accuracy:.2f}.h5")
+    CHECKPOINT_FOLDER = os.path.join(MODEL_PATH, dataset_name + "_" + str(epochs) + "_" + model_name)
+    #CHECKPOINT_FILEPATH = os.path.join(MODEL_PATH, dataset_name + "_" + str(epochs) + "_" + model_name,
+    #                                   "Original_checkpoint-{epoch:02d}-{val_loss:.2f}-{val_accuracy:.2f}.h5")
 
-        CHECKPOINT_FILEPATH = os.path.join(MODEL_PATH, dataset_name + "_" + str(epochs) + "_" + model_name,
-                                          "Original_checkpoint_best.h5")
-        if not os.path.exists(CHECKPOINT_FOLDER):
-            os.makedirs(CHECKPOINT_FOLDER)
+    CHECKPOINT_FILEPATH = os.path.join(MODEL_PATH, dataset_name + "_" + str(epochs) + "_" + model_name,
+                                      "Original_checkpoint_best.h5")
+    if not os.path.exists(CHECKPOINT_FOLDER):
+        os.makedirs(CHECKPOINT_FOLDER)
 
-        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath=CHECKPOINT_FILEPATH,
-            monitor='val_accuracy',
-            verbose=1,
-            save_best_only=True,
-            mode='max',
-            save_weights_only=False)
+    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+        filepath=CHECKPOINT_FILEPATH,
+        monitor='val_accuracy',
+        verbose=1,
+        save_best_only=True,
+        mode='max',
+        save_weights_only=False)
 
-        # lr_scheduler = LearningRateScheduler(lr_schedule, verbose=1)
-        #
-        # lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
-        #                                cooldown=0,
-        #                                patience=5,
-        #                                min_lr=0.5e-6)
+    # lr_scheduler = LearningRateScheduler(lr_schedule, verbose=1)
+    #
+    # lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
+    #                                cooldown=0,
+    #                                patience=5,
+    #                                min_lr=0.5e-6)
 
-        history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_split=0.2, callbacks=[model_checkpoint_callback])
+    history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_split=0.2, callbacks=[model_checkpoint_callback])
 
-        train_acc_pretrain = history.history["accuracy"]
-        val_acc_pretrain = history.history["val_accuracy"]
-        train_loss_pretrain = history.history["loss"]
-        val_loss_pretrain = history.history["val_loss"]
+    train_acc_pretrain = history.history["accuracy"]
+    val_acc_pretrain = history.history["val_accuracy"]
+    train_loss_pretrain = history.history["loss"]
+    val_loss_pretrain = history.history["val_loss"]
 
-        file = open(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "_" + model_name + "_logs.txt"), "w")
-        for idx, (train_loss, train_acc, val_loss, val_acc) in enumerate(
-                zip(train_loss_pretrain, train_acc_pretrain, val_loss_pretrain, val_acc_pretrain)):
-            file.write(
-                f'Epoch: {idx + 1}, Train Loss: {train_loss:.3f} Train Acc: {train_acc:.3f} Val Loss: {val_loss:.3f} Val Acc: {val_acc:.3f}')
-            file.write("\n")
+    file = open(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "_" + model_name + "_logs.txt"), "w")
+    for idx, (train_loss, train_acc, val_loss, val_acc) in enumerate(
+            zip(train_loss_pretrain, train_acc_pretrain, val_loss_pretrain, val_acc_pretrain)):
+        file.write(
+            f'Epoch: {idx + 1}, Train Loss: {train_loss:.3f} Train Acc: {train_acc:.3f} Val Loss: {val_loss:.3f} Val Acc: {val_acc:.3f}')
+        file.write("\n")
 
-        print(model.evaluate(x_test, y_test))
-        file.write(f'\nTest Loss: {model.evaluate(x_test, y_test)}')
+    print(model.evaluate(x_test, y_test))
+    file.write(f'\nTest Loss: {model.evaluate(x_test, y_test)}')
 
-        ## --------------------------------- Plotting the graphs --------------------------------- ##
-        plt.figure()
-        plt.plot(list(range(epochs)), train_loss_pretrain, label="Train loss_" + dataset_name, marker='o',
-                 color='tab:purple')
-        plt.plot(list(range(epochs)), val_loss_pretrain, label="Val loss_" + dataset_name, linestyle='--',
-                 marker='o', color='tab:orange')
-        plt.xlabel("Epochs")
-        plt.ylabel("Loss")
-        plt.legend()
-        plt.savefig(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalLoss.png"))
-        mlflow.log_artifact(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalLoss.png"), "OriginalinLoss.png")
+    ## --------------------------------- Plotting the graphs --------------------------------- ##
+    plt.figure()
+    plt.plot(list(range(epochs)), train_loss_pretrain, label="Train loss_" + dataset_name, marker='o',
+             color='tab:purple')
+    plt.plot(list(range(epochs)), val_loss_pretrain, label="Val loss_" + dataset_name, linestyle='--',
+             marker='o', color='tab:orange')
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalLoss.png"))
 
-        plt.figure()
-        plt.plot(list(range(epochs)), train_acc_pretrain, label="Train acc_" + dataset_name, marker='o',
-                 color='tab:purple')
-        plt.plot(list(range(epochs)), val_acc_pretrain, label="Val acc_" + dataset_name, linestyle='--',
-                 marker='o', color='tab:orange')
-        plt.xlabel("Epochs")
-        plt.ylabel("Accuracy")
-        plt.legend()
-        plt.savefig(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalAcc.png"))
-        mlflow.log_artifact(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalAcc.png"), "OriginalAcc.png")
-        mlflow.log_artifact(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "_" + model_name + "_logs.txt"), "logs.txt")
+    plt.figure()
+    plt.plot(list(range(epochs)), train_acc_pretrain, label="Train acc_" + dataset_name, marker='o',
+             color='tab:purple')
+    plt.plot(list(range(epochs)), val_acc_pretrain, label="Val acc_" + dataset_name, linestyle='--',
+             marker='o', color='tab:orange')
+    plt.xlabel("Epochs")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.savefig(os.path.join(RESULTS_PATH, LOSS_FOLDER, dataset_name + "OriginalAcc.png"))
 
-        return model
+    return model
 
 
 if __name__ == '__main__':

@@ -15,8 +15,6 @@ from utils_new import validate_watermark
 from trigger_new import trigger_generation
 from models_training_new import ewe_train, plain_model
 from watermark_dataset import create_wm_dataset
-from mlflow import log_metric, log_param, log_params, log_artifacts
-import mlflow
 import logging
 from datetime import datetime
 import mlconfig

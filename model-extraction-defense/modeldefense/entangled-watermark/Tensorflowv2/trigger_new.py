@@ -5,7 +5,6 @@ from utils_new import validate_watermark
 import tensorflow as tf
 import os
 import models_new as md
-# import mlflow
 
 RESULTS_FOLDER = "results"
 RESULTS_SUB_FOLDER_TRIGGERS = "triggers_images"

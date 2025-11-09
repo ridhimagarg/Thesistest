@@ -23,9 +23,9 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from art.estimators.classification import KerasClassifier
 from art.attacks.extraction import KnockoffNets
+from utils.data_utils import DataManager
 import mlconfig
 import models
-# import mlflow
 from datetime import datetime
 
 now = datetime.now().strftime("%d-%m-%Y")
@@ -35,91 +35,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 tf.compat.v1.disable_eager_execution()
 
 
-def data_preprocessing(dataset_name, adv_data_path_numpy):
-    """
-              Main idea
-              -------
-              This is the function which preprocess the data for the modelling.
-
-              Args:
-              .---
-              dataset_name: name of the dataset.
-
-              Future work:
-              -----------
-              This function for now is copied in multiple files but can be modified such that it can be exported.
-              It can be optimized more easily.
-
-        """
-
-    if dataset_name == 'mnist':
-        (x_train, y_train), (x_test, y_test) = mnist.load_data()
-        img_rows, img_cols, num_channels = 28, 28, 1
-        num_classes = 10
-
-    elif dataset_name == 'cifar10':
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        img_rows, img_cols, num_channels = 32, 32, 3
-        num_classes = 10
-
-    elif dataset_name == "cifar10resnet":
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        img_rows, img_cols, num_channels = 32, 32, 3
-        num_classes = 10
-
-    elif dataset_name == "cifar10resnet_255_preprocess":
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        img_rows, img_cols, num_channels = 32, 32, 3
-        num_classes = 10
-
-    else:
-        raise ValueError('Invalid dataset name')
-
-    idx = np.random.randint(x_train.shape[0], size=len(x_train))
-    x_train = x_train[idx, :]
-    y_train = y_train[idx]
-
-    # specify input dimensions of each image
-    input_shape = (img_rows, img_cols, num_channels)
-
-    # reshape x_train and x_test
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, num_channels)
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, num_channels)
-
-    # convert class labels (from digits) to one-hot encoded vectors
-    y_train = keras.utils.to_categorical(y_train, num_classes)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
-
-    # convert int to float
-    x_train = x_train.astype('float32')
-    x_test = x_test.astype('float32')
-
-    # normalise
-    if dataset_name != 'cifar10resnet':
-        x_train /= 255
-        x_test /= 255
-
-    else:
-
-        mean = [125.3, 123.0, 113.9]
-        std = [63.0, 62.1, 66.7]
-
-        for i in range(3):
-            x_train[:, :, :, i] = (x_train[:, :, :, i] - mean[i]) / std[i]
-            x_test[:, :, :, i] = (x_test[:, :, :, i] - mean[i]) / std[i]
-
-    # load adversarial data
-    adv = np.load(adv_data_path_numpy)
-    x_adv, y_adv = adv['arr_1'], adv['arr_2']
-    print(x_adv.shape)
-    print(y_adv.shape)
-
-    # x_adv = np.squeeze(x_adv, axis=1)
-    # y_adv = keras.utils.to_categorical(y_adv, num_classes)
-
-    # x_adv /= 255
-
-    return x_train, y_train, x_test, y_test, x_adv, y_adv, input_shape
+# Data preprocessing is now handled by utils.data_utils.DataManager
 
 
 def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_architecture, number_of_queries,
@@ -145,7 +61,11 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
         model_to_attack_path: victim model path which is already trained with watermarkset.
     """
 
-    x_train, y_train, x_test, y_test, x_adv, y_adv, _ = data_preprocessing(dataset_name, adv_data_path_numpy)
+    # Use centralized DataManager for data loading
+    x_train, y_train, x_test, y_test, x_adv, y_adv, _ = DataManager.load_and_preprocess_with_adversarial(
+        dataset_name=dataset_name, 
+        adv_data_path=adv_data_path_numpy
+    )
 
     models_mapping = {"mnist_l2": models.MNIST_L2, "cifar10_base_2": models.CIFAR10_BASE_2,
                       "cifar10_wideresnet": models.wide_residual_network}

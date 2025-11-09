@@ -1,7 +1,0 @@
-Just After loading victim model adv acc is: 0.8173032
-Victim model ../models/finetuned_finetuning_08-09-2023/true/final_cifar10resnet_255_preprocess_10_10_cifar10_250_WideResNet_255_preprocessfgsm_0.025_10000_cifar10_250_WideResNet_255_preprocess_Original_checkpoint_best/Victim_checkpoint_final.h5test acc with 250 is 0.29499998688697815
-adv acc with 250 is 0.2659122943878174
-Victim model ../models/finetuned_finetuning_08-09-2023/true/final_cifar10resnet_255_preprocess_10_10_cifar10_250_WideResNet_255_preprocessfgsm_0.025_10000_cifar10_250_WideResNet_255_preprocess_Original_checkpoint_best/Victim_checkpoint_final.h5test acc with 500 is 0.3149000108242035
-adv acc with 500 is 0.2873644530773163
-Victim model ../models/finetuned_finetuning_08-09-2023/true/final_cifar10resnet_255_preprocess_10_10_cifar10_250_WideResNet_255_preprocessfgsm_0.025_10000_cifar10_250_WideResNet_255_preprocess_Original_checkpoint_best/Victim_checkpoint_final.h5test acc with 1000 is 0.3977999985218048
-adv acc with 1000 is 0.29844412207603455

@@ -1,5 +1,0 @@
-Just After loading victim model adv acc is: 0.84
-Victim model ../models/finetuned_retraining_13-09-2023/true/mnist_100_MNIST_l20.0fgsm_0.025_100_mnist_20_MNIST_l20.0_Original_checkpoint_best/Victim_checkpoint_best.h5test acc with 250 is 0.9024999737739563
-adv acc with 250 is 0.41999998688697815
-Victim model ../models/finetuned_retraining_13-09-2023/true/mnist_100_MNIST_l20.0fgsm_0.025_100_mnist_20_MNIST_l20.0_Original_checkpoint_best/Victim_checkpoint_best.h5test acc with 500 is 0.9402999877929688
-adv acc with 500 is 0.46000000834465027

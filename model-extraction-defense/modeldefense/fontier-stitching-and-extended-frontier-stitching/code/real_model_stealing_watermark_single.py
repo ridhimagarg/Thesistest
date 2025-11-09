@@ -11,27 +11,61 @@ Introduction:
 
 import argparse
 import warnings
+import logging
+import sys
 
 warnings.filterwarnings('ignore')
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 import os
 import numpy as np
 import pandas as pd
 import random
-import keras
-from keras.datasets import mnist, cifar10
 import tensorflow as tf
+from tensorflow.keras.datasets import mnist, cifar10
 import matplotlib.pyplot as plt
 from art.estimators.classification import KerasClassifier, TensorFlowV2Classifier
 from art.attacks.extraction import KnockoffNets
-import mlconfig
 import models
-# import mlflow
+from utils.data_utils import DataManager
+from utils.watermark_verifier import WatermarkVerifier
+from utils.watermark_metrics import WatermarkMetrics
+from utils.experiment_logger import ExperimentLogger, log_reproducibility_info
 from datetime import datetime
+import time
 
 now = datetime.now().strftime("%d-%m-%Y")
-tf.compat.v1.disable_eager_execution()
+
+# Force stdout to be unbuffered for immediate output
+sys.stdout.reconfigure(line_buffering=True) if hasattr(sys.stdout, 'reconfigure') else None
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# GPU Configuration
+physical_devices = tf.config.list_physical_devices('GPU')
+if len(physical_devices) > 0:
+    try:
+        for gpu in physical_devices:
+            try:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            except AttributeError:
+                # Metal GPU doesn't support memory_growth, which is fine
+                pass
+        print(f"✅ GPU detected: {len(physical_devices)} GPU(s) available", flush=True)
+        print(f"   Using: {physical_devices[0].name}", flush=True)
+    except RuntimeError as e:
+        print(f"⚠️  GPU configuration error: {e}", flush=True)
+        print("   Falling back to CPU", flush=True)
+else:
+    print("ℹ️  No GPU detected, using CPU", flush=True)
+
+# Note: ART library may require eager execution disabled for some operations
+# Uncomment if needed: tf.compat.v1.disable_eager_execution()
 
 
 # tf.compat.v1.enable_eager_execution()
@@ -39,85 +73,7 @@ tf.compat.v1.disable_eager_execution()
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 
-def data_preprocessing(dataset_name, adv_data_path_numpy):
-    """
-                  Main idea
-                  -------
-                  This is the function which preprocess the data for the modelling.
-
-                  Args:
-                  .---
-                  dataset_name: name of the dataset.
-
-                  Future work:
-                  -----------
-                  This function for now is copied in multiple files but can be modified such that it can be exported.
-                  It can be optimized more easily.
-
-    """
-    if dataset_name == 'mnist':
-        (x_train, y_train), (x_test, y_test) = mnist.load_data()
-        img_rows, img_cols, num_channels = 28, 28, 1
-        num_classes = 10
-
-    elif dataset_name == 'cifar10':
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        img_rows, img_cols, num_channels = 32, 32, 3
-        num_classes = 10
-
-    elif dataset_name == "cifar10resnet":
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        img_rows, img_cols, num_channels = 32, 32, 3
-        num_classes = 10
-
-    elif dataset_name == "cifar10resnet_255_preprocess":
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        img_rows, img_cols, num_channels = 32, 32, 3
-        num_classes = 10
-
-    else:
-        raise ValueError('Invalid dataset name')
-
-    idx = np.random.randint(x_train.shape[0], size=len(x_train))
-    x_train = x_train[idx, :]
-    y_train = y_train[idx]
-
-    # specify input dimensions of each image
-    input_shape = (img_rows, img_cols, num_channels)
-
-    # reshape x_train and x_test
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, num_channels)
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, num_channels)
-
-    # convert class labels (from digits) to one-hot encoded vectors
-    y_train = keras.utils.to_categorical(y_train, num_classes)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
-
-    # convert int to float
-    x_train = x_train.astype('float32')
-    x_test = x_test.astype('float32')
-
-    # normalise
-    if dataset_name != 'cifar10resnet':
-        x_train /= 255
-        x_test /= 255
-
-    else:
-
-        mean = [125.3, 123.0, 113.9]
-        std = [63.0, 62.1, 66.7]
-
-        for i in range(3):
-            x_train[:, :, :, i] = (x_train[:, :, :, i] - mean[i]) / std[i]
-            x_test[:, :, :, i] = (x_test[:, :, :, i] - mean[i]) / std[i]
-
-    # load adversarial data
-    adv = np.load(adv_data_path_numpy)
-    x_adv, y_adv = adv['arr_1'], adv['arr_2']
-    print(x_adv.shape)
-    print(y_adv.shape)
-
-    return x_train, y_train, x_test, y_test, x_adv, y_adv, input_shape
+# Data preprocessing is now handled by utils.data_utils.DataManager
 
 
 def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_architecture, number_of_queries,
@@ -142,22 +98,73 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
                 model_to_attack_path: victim model path which is already trained with watermarkset.
     """
 
-    x_train, y_train, x_test, y_test, x_adv, y_adv, input_shape = data_preprocessing(dataset_name, adv_data_path_numpy)
+    print("=" * 60, flush=True)
+    print(f"🎯 Starting Model Extraction Attack", flush=True)
+    print(f"   Dataset: {dataset_name}", flush=True)
+    print(f"   Victim Model: {model_to_attack_path}", flush=True)
+    print(f"   Adversarial Data: {adv_data_path_numpy}", flush=True)
+    print(f"   Attacker Architecture: {attacker_model_architecture}", flush=True)
+    print(f"   Epochs to Steal: {num_epochs_to_steal}", flush=True)
+    print("=" * 60, flush=True)
+    logger.info(f"Starting model extraction attack on {model_to_attack_path}")
+    
+    # Initialize ExperimentLogger for comprehensive logging
+    exp_logger = ExperimentLogger("model_extraction_attack", output_dir=RESULTS_PATH)
+    
+    # Log reproducibility info
+    log_reproducibility_info(output_dir=str(exp_logger.experiment_dir), seed=0)
+    
+    # Log hyperparameters
+    exp_logger.log_hyperparameters(
+        dataset_name=dataset_name,
+        attacker_model_architecture=attacker_model_architecture,
+        num_epochs_to_steal=num_epochs_to_steal,
+        dropout=dropout,
+        optimizer=str(optimizer),
+        lr=lr,
+        weight_decay=weight_decay,
+        query_budgets=number_of_queries,
+        victim_model_path=model_to_attack_path,
+        adv_data_path=adv_data_path_numpy
+    )
+
+    # Use centralized DataManager for data loading
+    x_train, y_train, x_test, y_test, x_adv, y_adv, input_shape = DataManager.load_and_preprocess_with_adversarial(
+        dataset_name=dataset_name, 
+        adv_data_path=adv_data_path_numpy
+    )
 
     models_mapping = {"mnist_l2": models.MNIST_L2, "cifar10_base_2": models.CIFAR10_BASE_2, "resnet34": models.ResNet34,
                       "cifar10_wideresnet": models.wide_residual_network}
     num_epochs = num_epochs_to_steal
-    file1 = open(os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
+    
+    log_file_path = os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
                               "_".join((dataset_name, str(num_epochs),
-                                        model_to_attack_path.replace("\\", "/").split("/")[-2] + "_logs.txt"))), "w")
+                                        model_to_attack_path.replace("\\", "/").split("/")[-2] + "_logs.txt")))
+    os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+    file1 = open(log_file_path, "w")
 
+    print(f"📦 Loading victim model from: {model_to_attack_path}", flush=True)
+    logger.info(f"Loading victim model from: {model_to_attack_path}")
     model = load_model(model_to_attack_path, compile=False)
-    model.compile(loss=keras.losses.categorical_crossentropy, optimizer="adam", metrics=['accuracy'])
+    model.compile(loss=tf.keras.losses.CategoricalCrossentropy(), optimizer="adam", metrics=['accuracy'])
+    print("✅ Victim model loaded successfully", flush=True)
+    
+    # Log victim model size
+    victim_total_params = model.count_params()
+    victim_model_size_mb = victim_total_params * 4 / (1024 * 1024)
+    print(f"📊 Victim model size: {victim_total_params:,} parameters ({victim_model_size_mb:.2f} MB)")
+    exp_logger.metrics['victim_model_size_params'] = int(victim_total_params)
+    exp_logger.metrics['victim_model_size_mb'] = float(victim_model_size_mb)
 
-    ## Evaluating the vuctim model accuracy on the watermark set.
-    acc_adv = model.evaluate(x_adv, y_adv)[1]
-    print("Just After loading victim model adv acc is:", acc_adv)
-    file1.write("Just After loading victim model adv acc is: " + str(acc_adv) + "\n")
+    ## Evaluating the victim model accuracy on the watermark set.
+    print("🔍 Evaluating victim model on watermark set...", flush=True)
+    logger.info("Evaluating victim model on watermark set")
+    victim_watermark_acc = model.evaluate(x_adv, y_adv, verbose=0)[1]
+    print(f"   Victim model watermark accuracy: {victim_watermark_acc:.4f}", flush=True)
+    logger.info(f"Victim model watermark accuracy: {victim_watermark_acc:.4f}")
+    file1.write("Just After loading victim model adv acc is: " + str(victim_watermark_acc) + "\n")
+    exp_logger.metrics['victim_watermark_acc'] = float(victim_watermark_acc)
 
     loss_object = tf.keras.losses.CategoricalCrossentropy()
 
@@ -175,13 +182,27 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
     results = []
     results_adv = []
 
+    print(f"\n🔄 Starting attacks with query budgets: {number_of_queries}", flush=True)
+    logger.info(f"Starting attacks with query budgets: {number_of_queries}")
+    total_queries = len(number_of_queries)
+    current_query = 0
+
     ## performing the attack according to the query budget.
     for len_steal in number_of_queries:
+        current_query += 1
+        print("", flush=True)
+        print("-" * 60, flush=True)
+        print(f"📊 Attack {current_query}/{total_queries}: Query budget = {len_steal}", flush=True)
+        print("-" * 60, flush=True)
+        logger.info(f"Starting attack with query budget: {len_steal}")
+        
         indices = np.random.permutation(len(x_test))
         x_steal = x_test[indices[:len_steal]]
         y_steal = y_test[indices[:len_steal]]
         x_test0 = x_test[indices[len_steal:]]
         y_test0 = y_test[indices[len_steal:]]
+        
+        print(f"   Stealing dataset size: {len(x_steal)} samples", flush=True)
 
         attack_catalogue = {"KnockoffNet": KnockoffNets(classifier=classifier_original,
                                                         batch_size_fit=64,
@@ -205,12 +226,14 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
             optimizer.apply_gradients(zip(grads, model1.trainable_weights))
 
         for name, attack in attack_catalogue.items():
+            print(f"   🏗️  Creating attacker model: {attacker_model_architecture}", flush=True)
+            logger.info(f"Creating attacker model: {attacker_model_architecture}")
 
             ## setting up the attacker model.
             if attacker_model_architecture == "resnet34":
                 model_name, model_stolen = models_mapping[attacker_model_architecture]().call(input_shape)
 
-                # model_stolen.compile(loss=keras.losses.categorical_crossentropy, optimizer="adam", metrics=['accuracy'])
+                # model_stolen.compile(loss=tf.keras.losses.CategoricalCrossentropy(), optimizer="adam", metrics=['accuracy'])
 
             else:
                 if dropout:
@@ -218,7 +241,9 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
                 else:
                     model_name, model_stolen = models_mapping[attacker_model_architecture]()
 
-                model_stolen.compile(loss=keras.losses.categorical_crossentropy, optimizer="adam", metrics=['accuracy'])
+                model_stolen.compile(loss=tf.keras.losses.CategoricalCrossentropy(), optimizer="adam", metrics=['accuracy'])
+
+            print(f"   ✅ Attacker model created: {model_name}", flush=True)
 
             if attacker_model_architecture == "resnet34":
 
@@ -231,32 +256,121 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
                 classifier_stolen = KerasClassifier(model_stolen, clip_values=(0, 1), use_logits=False)
 
             ## performing the attack.
+            print(f"   ⚔️  Performing model extraction attack...", flush=True)
+            print(f"      This may take a few minutes (training {num_epochs} epochs)...", flush=True)
+            logger.info(f"Performing model extraction attack with {len_steal} queries, {num_epochs} epochs")
+            
+            # Track attack time
+            attack_start_time = time.time()
             classifier_stolen = attack.extract(x_steal, y_steal, thieved_classifier=classifier_stolen)
+            attack_time = time.time() - attack_start_time
+            print(f"   ✅ Attack completed in {attack_time:.2f} seconds", flush=True)
 
             ## evaluating the attacked model on test set
-            acc = classifier_stolen.model.evaluate(x_test, y_test)[1]
-            print(f"test acc with {len_steal} is {acc}")
+            print(f"   📊 Evaluating stolen model on test set...", flush=True)
+            acc = classifier_stolen.model.evaluate(x_test, y_test, verbose=0)[1]
+            print(f"   ✅ Test accuracy with {len_steal} queries: {acc:.4f}", flush=True)
+            logger.info(f"Test accuracy with {len_steal} queries: {acc:.4f}")
             file1.write(f"Victim model {model_to_attack_path}")
             file1.write(f"test acc with {len_steal} is {acc}\n")
             results.append((name, len_steal, acc))
 
             # test with adversarial data
-            # evaluating the attacked model on adversasrial set/watermark set.
-            acc_adv = classifier_stolen.model.evaluate(x_adv, y_adv)[1]
-            print(f"adv acc with {len_steal} is {acc_adv}")
+            # evaluating the attacked model on adversarial set/watermark set.
+            print(f"   🔍 Evaluating stolen model on watermark set...", flush=True)
+            acc_adv = classifier_stolen.model.evaluate(x_adv, y_adv, verbose=0)[1]
+            print(f"   ✅ Watermark accuracy with {len_steal} queries: {acc_adv:.4f}", flush=True)
+            logger.info(f"Watermark accuracy with {len_steal} queries: {acc_adv:.4f}")
             file1.write(f"adv acc with {len_steal} is {acc_adv}\n")
             results_adv.append((name, len_steal, acc_adv))
 
-            classifier_stolen.model.save(
-                os.path.join(MODEL_PATH, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
+            # Statistical theft verification
+            print(f"   🔍 Verifying theft using statistical methods...", flush=True)
+            verifier = WatermarkVerifier(
+                victim_acc=victim_watermark_acc,  # Use victim's watermark accuracy
+                num_classes=10,
+                watermark_size=len(x_adv)
+            )
+            verification_result = verifier.verify_theft(
+                suspected_acc=acc_adv,  # Stolen model's watermark accuracy
+                threshold_ratio=0.5,
+                confidence=0.99
+            )
+            print(f"   📊 Theft Verification Results:", flush=True)
+            print(f"      Is stolen: {verification_result['is_stolen']}", flush=True)
+            print(f"      Confidence: {verification_result['confidence']:.4f}", flush=True)
+            print(f"      P-value: {verification_result['p_value']:.6f}", flush=True)
+            print(f"      Threshold: {verification_result['threshold']:.4f}", flush=True)
+            logger.info(f"Theft verification: is_stolen={verification_result['is_stolen']}, "
+                       f"confidence={verification_result['confidence']:.4f}, "
+                       f"p_value={verification_result['p_value']:.6f}")
+            file1.write(f"Theft verification with {len_steal} queries: "
+                       f"is_stolen={verification_result['is_stolen']}, "
+                       f"confidence={verification_result['confidence']:.4f}, "
+                       f"p_value={verification_result['p_value']:.6f}\n")
+
+            # Calculate comprehensive metrics
+            print(f"   📈 Calculating comprehensive watermark metrics...", flush=True)
+            metrics = WatermarkMetrics.calculate_all_metrics(
+                victim_model=model,
+                stolen_model=classifier_stolen.model,
+                x_test=x_test0,
+                y_test=y_test0,
+                x_watermark=x_adv,
+                y_watermark=y_adv,
+                batch_size=128
+            )
+            print(f"   📊 Comprehensive Metrics:", flush=True)
+            print(f"      Fidelity: {metrics['fidelity']:.4f}", flush=True)
+            print(f"      Watermark Retention: {metrics['watermark_retention']:.4f} ({metrics['watermark_retention']*100:.2f}%)", flush=True)
+            print(f"      Test Accuracy Gap: {metrics['test_acc_gap']:.4f}", flush=True)
+            print(f"      KL Divergence: {metrics['kl_divergence']:.4f}", flush=True)
+            print(f"      Detectability Score: {metrics['detectability']:.4f}", flush=True)
+            logger.info(f"Comprehensive metrics: fidelity={metrics['fidelity']:.4f}, "
+                       f"retention={metrics['watermark_retention']:.4f}, "
+                       f"detectability={metrics['detectability']:.4f}")
+            file1.write(f"Comprehensive metrics with {len_steal} queries: "
+                       f"fidelity={metrics['fidelity']:.4f}, "
+                       f"retention={metrics['watermark_retention']:.4f}, "
+                       f"test_acc_gap={metrics['test_acc_gap']:.4f}, "
+                       f"kl_divergence={metrics['kl_divergence']:.4f}, "
+                       f"detectability={metrics['detectability']:.4f}\n")
+            
+            # Log stolen model size
+            stolen_total_params = classifier_stolen.model.count_params()
+            stolen_model_size_mb = stolen_total_params * 4 / (1024 * 1024)
+            
+            # Log attack results to ExperimentLogger
+            exp_logger.log_attack_results(
+                query_budget=len_steal,
+                test_acc=acc,
+                watermark_acc=acc_adv,
+                verification_result=verification_result,
+                comprehensive_metrics=metrics,
+                attack_time=attack_time,
+                stolen_model_size_params=stolen_total_params,
+                stolen_model_size_mb=stolen_model_size_mb
+            )
+
+            # Save model in Keras format (.keras) instead of legacy HDF5 (.h5)
+            model_save_path = os.path.join(MODEL_PATH, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
                              "_".join((dataset_name, str(len_steal), str(num_epochs),
                                        adv_data_path_numpy.replace("\\", "/").split("/")[-1].split(".npz")[
-                                           0] + ".h5"))))
+                                           0] + ".keras")))
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
+            print(f"   💾 Saving stolen model to: {model_save_path}", flush=True)
+            classifier_stolen.model.save(model_save_path)
+            print(f"   ✅ Model saved successfully", flush=True)
 
+    print(f"\n📈 Generating visualization...", flush=True)
+    logger.info("Generating visualization")
+    
     image_save_name = os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
                                    "_".join((dataset_name, str(num_epochs),
                                              model_to_attack_path.replace("\\", "/").split("/")[
                                                  -2] + "TestandWatermarkAcc.png")))
+    os.makedirs(os.path.dirname(image_save_name), exist_ok=True)
 
     df = pd.DataFrame(results, columns=('Method Name', 'Stealing Dataset Size', 'Accuracy'))
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -270,28 +384,49 @@ def model_extraction_attack(dataset_name, adv_data_path_numpy, attacker_model_ar
     for name, group in df_adv.groupby("Method Name"):
         group.plot(1, 2, ax=ax, label="Watermark acc", linestyle='--', marker='o', color='tab:orange')
     plt.savefig(image_save_name)
+    print(f"   ✅ Visualization saved to: {image_save_name}", flush=True)
+    logger.info(f"Visualization saved to: {image_save_name}")
+    
+    # Save DataFrames to CSV for research paper analysis
+    csv_test_path = os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
+                                 "_".join((dataset_name, str(num_epochs),
+                                           model_to_attack_path.replace("\\", "/").split("/")[-2] + "_test_accuracy.csv")))
+    csv_watermark_path = os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
+                                      "_".join((dataset_name, str(num_epochs),
+                                                model_to_attack_path.replace("\\", "/").split("/")[-2] + "_watermark_accuracy.csv")))
+    
+    df.to_csv(csv_test_path, index=False)
+    df_adv.to_csv(csv_watermark_path, index=False)
+    print(f"   ✅ CSV files saved:", flush=True)
+    print(f"      Test accuracy: {csv_test_path}", flush=True)
+    print(f"      Watermark accuracy: {csv_watermark_path}", flush=True)
+    logger.info(f"CSV files saved: {csv_test_path}, {csv_watermark_path}")
+    
     file1.close()
-    # mlflow.log_artifact(
-    #     os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, adv_data_path_numpy.replace("\\", "/").split("/")[-2],
-    #                  "_".join((dataset_name, str(num_epochs),
-    #                            model_to_attack_path.replace("\\", "/").split("/")[-2] + "_logs.txt"))), "logs.txt")
-    # mlflow.log_artifact(os.path.join(image_save_name), "TestandWatermarkAcc.png")
+    print(f"   ✅ Log file saved", flush=True)
+    
+    # Save all ExperimentLogger data
+    exp_logger.save_all()
+    print(f"   ✅ Comprehensive experiment data saved to: {exp_logger.experiment_dir}", flush=True)
+    
+    print("=" * 60, flush=True)
+    print(f"✅ Model extraction attack completed successfully!", flush=True)
+    print("=" * 60, flush=True)
+    logger.info("Model extraction attack completed successfully")
 
     return df, df_adv
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", type=str, default="configs/knockoffattack_finetuned.yaml")
-
-    args = parser.parse_args()
-    print(args)
-    config = mlconfig.load(args.config)
-
-    dataset_name = config.dataset_name
-
-    # mlflow.set_tracking_uri("sqlite:///../mlflow.db")
-    # mlflow.set_experiment("frontier-stiching-realmodelstealing")
+    # Optimized configuration values for model extraction attack
+    dataset_name = "cifar10"
+    epochs_extract = 50
+    attacker_model_architecture = "cifar10_base_2"
+    optimizer = "adam"
+    lr = 0.001  # Optimized from 0.01 for better attack training
+    weight_decay = 0
+    dropout = 0
+    which_adv = "true"
 
     seed = 0
     random.seed(seed)
@@ -303,27 +438,16 @@ if __name__ == "__main__":
     MODEL_PATH = f"../models/attack_finetuned{now}"
     DATA_PATH = "../data"
 
-    if not os.path.exists(os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, config.which_adv)):
-        os.makedirs(os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, config.which_adv))
+    if not os.path.exists(os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, which_adv)):
+        os.makedirs(os.path.join(RESULTS_PATH, LOSS_Acc_FOLDER, which_adv))
 
-    if not os.path.exists(os.path.join(MODEL_PATH, config.which_adv)):
-        os.makedirs(os.path.join(MODEL_PATH, config.which_adv))
+    if not os.path.exists(os.path.join(MODEL_PATH, which_adv)):
+        os.makedirs(os.path.join(MODEL_PATH, which_adv))
 
-    # if config.optimizer == "adam":
-    #    optimizer = tf.keras.optimizers.Adam(learning_rate=config.lr, decay=config.weight_decay)
-    # else:
-    # optimizer = tf.keras.optimizers.SGD(learning_rate=0.001, decay=config.weight_decay)
-    #    optimizer = None
-
-    experiment_name = "realstealing" + dataset_name
-    # with mlflow.start_run(run_name=experiment_name):
     params = {"dataset_name": dataset_name,
-                "attacker_model_architecture": config.attacker_model_architecture, "optimizer": config.optimizer,
-                "dropout": config.dropout, "lr": config.lr, "weight_decay": config.weight_decay,
-                "epochs_extract": config.epochs_extract}
-
-    # for param in params:
-        # mlflow.log_param(param, params[param])
+              "attacker_model_architecture": attacker_model_architecture, "optimizer": optimizer,
+              "dropout": dropout, "lr": lr, "weight_decay": weight_decay,
+              "epochs_extract": epochs_extract}
 
             ## ------------------------------- IMPORTANT ---------------------------##
             ## to remove the overhead present in the real_model_stealing.py file for the mnually changing things in the loop.
@@ -387,11 +511,50 @@ if __name__ == "__main__":
     # finetuned_model_path = ["../models/finetuned_finetuning_08-09-2023/true/final_cifar10resnet_255_preprocess_10_10_cifar10_250_WideResNet_255_preprocessfgsm_0.025_10000_cifar10_250_WideResNet_255_preprocess_Original_checkpoint_best/Victim_checkpoint_final.h5"]
 
 
-    adv_file_path = ["../data/fgsm/mnist/true/fgsm_0.25_250_mnist_20_MNIST_l20.0_Original_checkpoint_best.npz"]
+    print("=" * 60, flush=True)
+    print("🚀 Starting Model Stealing Attack with Watermark Verification", flush=True)
+    print("=" * 60, flush=True)
+    print(f"📋 Configuration:", flush=True)
+    print(f"   Dataset: {dataset_name}", flush=True)
+    print(f"   Attacker Architecture: {attacker_model_architecture}", flush=True)
+    print(f"   Epochs to Extract: {epochs_extract}", flush=True)
+    print(f"   Query Budgets: [250, 500, 1000, 5000, 10000, 20000]", flush=True)
+    print("", flush=True)
+    logger.info("Starting model stealing attack with watermark verification")
 
-    finetuned_model_path = ["../models/finetuned_retraining_19-11-2023/true/final_mnist_100_MNIST_l20.0fgsm_0.25_250_mnist_20_MNIST_l20.0_Original_checkpoint_best/Victim_checkpoint_final.h5"]
+    # Paths to adversarial examples and watermarked models
+    # Update these paths to match your generated files
+    adv_file_paths = [
+        "../data/fgsm/cifar10/true/fgsm_0.01_10000_cifar10_30_CIFAR10_BASE_2_Original_checkpoint_best.npz",
+        "../data/fgsm/cifar10/true/fgsm_0.015_10000_cifar10_30_CIFAR10_BASE_2_Original_checkpoint_best.npz"
+    ]
 
-    for adv_file_path, model_path in zip(adv_file_path, finetuned_model_path):
+    finetuned_model_paths = [
+        "../models/finetuned_finetuning_09-11-2025/true/cifar10_10_10_cifar10_30_CIFAR10_BASE_2fgsm_0.01_10000_cifar10_30_CIFAR10_BASE_2_Original_checkpoint_best/Victim_checkpoint_best.keras",
+        "../models/finetuned_finetuning_09-11-2025/true/cifar10_10_10_cifar10_30_CIFAR10_BASE_2fgsm_0.015_10000_cifar10_30_CIFAR10_BASE_2_Original_checkpoint_best/Victim_checkpoint_best.keras"
+    ]
+
+    total_models = len(adv_file_paths)
+    current_model = 0
+
+    for adv_file_path, model_path in zip(adv_file_paths, finetuned_model_paths):
+        current_model += 1
+        print("", flush=True)
+        print("=" * 60, flush=True)
+        print(f"🔄 Processing Model {current_model}/{total_models}", flush=True)
+        print("=" * 60, flush=True)
+        
+        # Validate paths exist
+        if not os.path.exists(adv_file_path):
+            print(f"❌ ERROR: Adversarial file not found: {adv_file_path}", flush=True)
+            logger.error(f"Adversarial file not found: {adv_file_path}")
+            continue
+            
+        if not os.path.exists(model_path):
+            print(f"❌ ERROR: Model file not found: {model_path}", flush=True)
+            logger.error(f"Model file not found: {model_path}")
+            continue
+        
         adv_data_path_numpy = adv_file_path
         model_to_attack_path = model_path
 
@@ -399,12 +562,20 @@ if __name__ == "__main__":
         final_df_adv = pd.DataFrame(columns=('Method Name', 'Stealing Dataset Size', 'Accuracy'))
 
         df, df_adv = model_extraction_attack(dataset_name, adv_data_path_numpy,
-                                                    config.attacker_model_architecture,
+                                                    attacker_model_architecture,
                                                     number_of_queries=[250, 500, 1000, 5000, 10000, 20000],
-                                                    num_epochs_to_steal=config.epochs_extract, dropout=config.dropout,
-                                                    optimizer=config.optimizer,
-                                                    lr=config.lr, weight_decay=config.weight_decay,
+                                                    num_epochs_to_steal=epochs_extract, dropout=dropout,
+                                                    optimizer=optimizer,
+                                                    lr=lr, weight_decay=weight_decay,
                                                     model_to_attack_path=model_to_attack_path)
+        
+        print(f"✅ Completed processing model {current_model}/{total_models}", flush=True)
+    
+    print("", flush=True)
+    print("=" * 60, flush=True)
+    print("✅ All model extraction attacks completed!", flush=True)
+    print("=" * 60, flush=True)
+    logger.info("All model extraction attacks completed successfully")
 
 
 

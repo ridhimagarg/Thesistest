@@ -1,3 +1,71 @@
-model-extraction-defense/modeldefense/dawndynamicadversarialwatermarkingofneuralnetworks/notebooks
-model-extraction-defense/modeldefense/entangled-watermark/Tensorflowv2/notebooks
-model-extraction-defense/modeldefense/fontier-stitching-and-extended-frontier-stitching/notebooks
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv
+
+# Poetry
+poetry.lock
+.poetry/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment variables
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.npz
+*.db
+mlflow.db
+*.log
+results/
+models/
+data/
+*.png
+*.jpg
+*.svg
+*.pdf
+
+# Exclude important directories but keep structure
+!results/.gitkeep
+!models/.gitkeep
+!data/.gitkeep

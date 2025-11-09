@@ -1,16 +1,19 @@
 import tensorflow as tf
-import keras
 import numpy as np
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout, ReLU, BatchNormalization, GlobalAveragePooling2D, AveragePooling2D, Concatenate, ZeroPadding2D, Activation
-from keras.models import Model
-from keras.layers import Input, add
-from keras import layers
-import tensorflow_model_optimization as tfmot
-from keras.regularizers import l2
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, add
+from tensorflow.keras import layers
+from tensorflow.keras.regularizers import l2
 
-
-
-prune_low_magnitude = tfmot.sparsity.keras.prune_low_magnitude
+# Optional import for model optimization (pruning)
+try:
+    import tensorflow_model_optimization as tfmot
+    prune_low_magnitude = tfmot.sparsity.keras.prune_low_magnitude
+    TFMOT_AVAILABLE = True
+except ImportError:
+    TFMOT_AVAILABLE = False
+    prune_low_magnitude = None
 
 def MNIST_L2(input_shape = (28,28,1), dropout=0.0):
 
@@ -140,11 +143,14 @@ pruning_params_2_by_4 = {
     'sparsity_m_by_n': (2, 4),
 }
 
-pruning_params_sparsity_0_5 = {
-    'pruning_schedule': tfmot.sparsity.keras.ConstantSparsity(target_sparsity=0.9,
-                                                              begin_step=0,
-                                                              frequency=100)
-}
+if TFMOT_AVAILABLE:
+    pruning_params_sparsity_0_5 = {
+        'pruning_schedule': tfmot.sparsity.keras.ConstantSparsity(target_sparsity=0.9,
+                                                                  begin_step=0,
+                                                                  frequency=100)
+    }
+else:
+    pruning_params_sparsity_0_5 = {}
 def CIFAR10_BASE_2_Prune(pruning_params_sparsity_0_5, input_shape = (32,32,3), dropout=0.0, ):
 
     model = tf.keras.models.Sequential()
@@ -291,7 +297,7 @@ def setup_transformation(dataset_name):
 
 # keras.saving.get_custom_objects().clear()
 # @keras.saving.register_keras_serializable(package="MyLayers")
-class ResBlock(keras.layers.Layer):
+class ResBlock(tf.keras.layers.Layer):
     def __init__(self, channels, stride=1):
         super(ResBlock, self).__init__()
         self.flag = (stride != 1)
