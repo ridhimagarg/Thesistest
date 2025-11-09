@@ -1,9 +1,0 @@
-
-Loaded EWE trained model models/scratch/EWE_MNIST_L5_DR05Victim_mnist_model test accuracy 0.9880342371761799
-
-Loaded EWE trained model models/scratch/EWE_MNIST_L5_DR05Victim_mnist_model watermark accuracy 1.0
-
-Params
-Trigger set: data/trigger/EWE_MNIST_L5_DR05mnist_trigger.npz 
-Target set: data/fgsm/mnistMNIST_l2_EWE/out/7/target_0.01original_06-10-2023mnist_20_MNIST_l20.0Original_checkpoint_best.h5_target.npz 
-
