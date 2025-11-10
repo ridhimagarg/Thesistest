@@ -67,12 +67,15 @@ BATCH_SIZE = 64  # Batch size for processing images
 
 # Data preprocessing is now handled by utils.data_utils.DataManager
 
+@tf.function(reduce_retracing=True)
 def fast_gradient_signed_batch(x: tf.Tensor, y: tf.Tensor, model, eps: float, 
                                 clip_min: float = 0.0, clip_max: float = 1.0) -> tf.Tensor:
     """
     Perform FGSM (Fast Gradient Sign Method) attack on a batch of images.
     
     Reference: https://arxiv.org/abs/1412.6572
+    
+    Optimized with @tf.function for graph compilation and better performance.
 
     Args:
         x: Input data tensor (batch of images).
@@ -89,7 +92,7 @@ def fast_gradient_signed_batch(x: tf.Tensor, y: tf.Tensor, model, eps: float,
     
     with tf.GradientTape() as tape:
         tape.watch(x)
-        y_pred = model(x)
+        y_pred = model(x, training=False)  # Explicitly set training=False
         # Use categorical crossentropy loss for multi-class classification
         loss_fn = tf.keras.losses.CategoricalCrossentropy()
         loss = loss_fn(y, y_pred)
@@ -256,25 +259,33 @@ def gen_adversaries(
             x_adv_batch = attacker.generate(x_batch)
             x_adv_batch = np.clip(x_adv_batch, clip_min, clip_max)
             x_adv_np = x_adv_batch  # Already numpy array
+            
+            # Get predictions using direct model calls (faster than predict())
+            x_batch_tensor = tf.constant(x_batch, dtype=tf.float32)
+            x_adv_tensor = tf.constant(x_adv_batch, dtype=tf.float32)
+            y_pred_orig = model(x_batch_tensor, training=False)
+            y_pred_adv = model(x_adv_tensor, training=False)
         else:
-            # Use original FGSM method
+            # Use original FGSM method - create tensors once and reuse
             x_tensor = tf.constant(x_batch, dtype=tf.float32)
             y_tensor = tf.constant(y_batch, dtype=tf.float32)
-            x_adv_batch_tf = fast_gradient_signed_batch(x_tensor, y_tensor, model, eps, clip_min, clip_max)
-            x_adv_np = x_adv_batch_tf.numpy()
+            
+            # Generate adversarial examples
+            x_adv_tensor = fast_gradient_signed_batch(x_tensor, y_tensor, model, eps, clip_min, clip_max)
+            
+            # Get predictions using tensors directly (no numpy conversion needed yet)
+            y_pred_orig = model(x_tensor, training=False)
+            y_pred_adv = model(x_adv_tensor, training=False)
+            
+            # Only convert to numpy when needed for storage/classification
+            x_adv_np = x_adv_tensor.numpy()
             x_adv_batch = x_adv_np
         
-        # Get predictions for original and adversarial images
-        if use_art_attack:
-            # Use model directly for predictions
-            y_pred_orig = model.predict(x_batch, verbose=0, batch_size=batch_size)
-            y_pred_adv = model.predict(x_adv_batch, verbose=0, batch_size=batch_size)
-        else:
-            # Use tensorflow for predictions
-            x_tensor = tf.constant(x_batch, dtype=tf.float32)
-            x_adv_tensor = tf.constant(x_adv_np, dtype=tf.float32)
-            y_pred_orig = model(x_tensor)
-            y_pred_adv = model(x_adv_tensor)
+        # Convert predictions to numpy for classification (batch conversion)
+        if isinstance(y_pred_orig, tf.Tensor):
+            y_pred_orig = y_pred_orig.numpy()
+        if isinstance(y_pred_adv, tf.Tensor):
+            y_pred_adv = y_pred_adv.numpy()
         
         y_pred_classes = np.argmax(y_pred_orig, axis=1)
         y_pred_adv_classes = np.argmax(y_pred_adv, axis=1)
@@ -470,6 +481,11 @@ def fgsm_attack(
                 x_false_adv = np.array([x_adv for x, x_adv, y in false_advs])
                 y_false_adv = np.array([y for x, x_adv, y in false_advs])
                 
+                # Create directories if they don't exist
+                os.makedirs(os.path.dirname(at_full) if os.path.dirname(at_full) else '.', exist_ok=True)
+                os.makedirs(os.path.dirname(at_true) if os.path.dirname(at_true) else '.', exist_ok=True)
+                os.makedirs(os.path.dirname(at_false) if os.path.dirname(at_false) else '.', exist_ok=True)
+                
                 # Save to NPZ files
                 logger.info(f"Saving {at_type.upper()} full adversaries to {at_full}")
                 np.savez(at_full, x_test_adv_orig, x_test_adv, y_test_adv)
@@ -552,6 +568,11 @@ def fgsm_attack(
         x_false_adv = np.array([x_adv for x, x_adv, y in false_advs])
         y_false_adv = np.array([y for x, x_adv, y in false_advs])
 
+        # Create directories if they don't exist
+        os.makedirs(os.path.dirname(npz_full_file_name) if os.path.dirname(npz_full_file_name) else '.', exist_ok=True)
+        os.makedirs(os.path.dirname(npz_true_file_name) if os.path.dirname(npz_true_file_name) else '.', exist_ok=True)
+        os.makedirs(os.path.dirname(npz_false_file_name) if os.path.dirname(npz_false_file_name) else '.', exist_ok=True)
+        
         # Save to NPZ files
         logger.info(f"Saving full adversaries to {npz_full_file_name}")
         np.savez(npz_full_file_name, x_test_adv_orig, x_test_adv, y_test_adv)

@@ -27,7 +27,7 @@ except ImportError:
 
 from datetime import datetime
 from utils.data_utils import DataManager
-from utils.performance_utils import enable_mixed_precision, optimize_gpu_memory
+from utils.performance_utils import enable_mixed_precision, optimize_gpu_memory, create_data_generator_with_validation
 from utils.experiment_logger import ExperimentLogger, log_reproducibility_info
 import time
 import logging
@@ -119,7 +119,7 @@ def lr_schedule(epoch, initial_lr=0.001, decay_factor=0.1, decay_epochs=[30, 40]
 
 def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=128, optimizer="adam", lr=0.001,
                 weight_decay=0.0001, lr_schedule_enabled=True, lr_decay_factor=0.1, lr_decay_epochs=[30, 40],
-                beta_1=0.9, beta_2=0.999, epsilon=1e-7):
+                beta_1=0.9, beta_2=0.999, epsilon=1e-7, use_mixed_precision=False):
 
     """
     Main idea
@@ -145,6 +145,11 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
     
     # Log reproducibility info
     log_reproducibility_info(output_dir=str(exp_logger.experiment_dir), seed=0)
+    
+    # Enable mixed precision if requested
+    if use_mixed_precision:
+        enable_mixed_precision('mixed_float16')
+        print("✅ Mixed precision training enabled", flush=True)
     
     # Helper function to safely log to MLflow
     def safe_mlflow_log(func, *args, **kwargs):
@@ -187,7 +192,7 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
     with SafeMLflowRun(experiment_name):
         params = {"dataset_name": dataset_name, "epochs_pretrain": epochs,
                   "model_architecture": model_architecture, "optimizer": str(optimizer), "lr": lr,
-                  "weight_decay": weight_decay, "dropout": dropout}
+                  "weight_decay": weight_decay, "dropout": dropout, "mixed_precision": use_mixed_precision}
         
         # Log hyperparameters to ExperimentLogger
         exp_logger.log_hyperparameters(**params)
@@ -199,6 +204,18 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
         #                      "cifar10_base": models.CIFAR10_BASE, "cifar10_base_drp02": models.CIFAR10_BASE,
         #                      "cifar10_base_drp03": models.CIFAR10_BASE,
         #                      "cifar10_base_2": models.CIFAR10_BASE_2}
+
+        # Auto-select model based on dataset if model_architecture is 'auto'
+        if model_architecture == "auto":
+            if dataset_name == "mnist":
+                model_architecture = "mnist_l2"
+            elif dataset_name in ["cifar10", "cifar100", "svhn", "stl10", "eurosat"]:
+                # All RGB datasets use the same flexible model
+                # CIFAR10_BASE_2 uses GlobalAveragePooling2D which adapts to different input sizes
+                model_architecture = "cifar10_base_2"
+            else:
+                raise ValueError(f"Auto model selection not supported for dataset: {dataset_name}")
+            print(f"Auto-selected model architecture: {model_architecture} for dataset: {dataset_name}")
 
         models_mapping = {"mnist_l2": models.MNIST_L2, "cifar10_base_2": models.CIFAR10_BASE_2,
                           "cifar10_base_3": models.CIFAR10_BASE_3, "resnet34": models.ResNet34}
@@ -271,7 +288,24 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
         # )
         # callbacks.append(lr_reducer)
 
-        history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_split=0.2,
+        # Optimized: Use tf.data.Dataset for better performance
+        # Split validation data manually since we're using tf.data
+        val_split = 0.2
+        val_size = int(len(x_train) * val_split)
+        x_val = x_train[:val_size]
+        y_val = y_train[:val_size]
+        x_train_split = x_train[val_size:]
+        y_train_split = y_train[val_size:]
+        
+        # Create tf.data.Dataset with prefetching and optimization
+        train_ds, val_ds = create_data_generator_with_validation(
+            x_train_split, y_train_split,
+            x_val, y_val,
+            batch_size=batch_size,
+            shuffle_train=True
+        )
+        
+        history = model.fit(train_ds, epochs=epochs, verbose=1, validation_data=val_ds,
                             callbacks=callbacks)
         
         training_time = time.time() - training_start_time

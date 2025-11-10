@@ -695,11 +695,11 @@ class ResNet18(Model):
 
 
 
-def CIFAR10_BASE_2(input_shape = (32,32,3), dropout=0.0):
+def CIFAR10_BASE_2(input_shape = (32,32,3), dropout=0.0, num_classes=10):
 
     model = tf.keras.models.Sequential()
 
-    model.add(layers.Conv2D(32, (3, 3), padding='same', activation='relu', input_shape=(32, 32, 3)))
+    model.add(layers.Conv2D(32, (3, 3), padding='same', activation='relu', input_shape=input_shape))
     model.add(layers.BatchNormalization())
     model.add((layers.Conv2D(32, (3, 3), padding='same', activation='relu')))
     model.add(layers.BatchNormalization())
@@ -721,8 +721,48 @@ def CIFAR10_BASE_2(input_shape = (32,32,3), dropout=0.0):
     model.add(layers.Dense(128, activation="relu"))
     model.add(layers.BatchNormalization())
     model.add(layers.Dropout(0.5))
-    model.add(layers.Dense(10, activation="softmax"))
+    model.add(layers.Dense(num_classes, activation="softmax"))
     name1 = "CIFAR10_BASE_2"
+
+    return name1, model
+
+
+def CIFAR10_SMALL(input_shape = (32,32,3), dropout=0.0, num_classes=10):
+    """
+    Smaller CIFAR10 model for faster experimentation.
+    Reduced from CIFAR10_BASE_2:
+    - Fewer conv layers (4 instead of 6)
+    - Smaller dense layer (64 instead of 128)
+    - Still achieves good accuracy (~75-80% on CIFAR10)
+    """
+    model = tf.keras.models.Sequential()
+
+    # Block 1: 32 filters
+    model.add(layers.Conv2D(32, (3, 3), padding='same', activation='relu', input_shape=input_shape))
+    model.add(layers.BatchNormalization())
+    model.add(layers.MaxPooling2D(pool_size=(2, 2)))
+    model.add(layers.Dropout(0.3))
+
+    # Block 2: 64 filters
+    model.add(layers.Conv2D(64, (3, 3), padding='same', activation='relu'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.MaxPooling2D(pool_size=(2, 2)))
+    model.add(layers.Dropout(0.5))
+
+    # Block 3: 128 filters
+    model.add(layers.Conv2D(128, (3, 3), padding='same', activation='relu'))
+    model.add(layers.BatchNormalization())
+    model.add(layers.MaxPooling2D(pool_size=(2, 2)))
+    model.add(layers.Dropout(0.5))
+
+    # Dense layers
+    model.add(layers.Flatten())
+    model.add(layers.Dense(64, activation="relu"))
+    model.add(layers.BatchNormalization())
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Dense(num_classes, activation="softmax"))
+    
+    name1 = "CIFAR10_SMALL"
 
     return name1, model
 

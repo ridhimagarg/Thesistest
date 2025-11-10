@@ -1,0 +1,5 @@
+Just After loading victim model adv acc is: 0.2800000011920929
+Victim model ../models/finetuned_finetuning_10-11-2025/true/svhn_1_1_svhn_1_cifar10_base_2fgsm_0.01_50_svhn_1_cifar10_base_2_Original_checkpoint_best/Victim_checkpoint_best.kerastest acc with 50 is 0.07375537604093552
+adv acc with 50 is 0.03999999910593033
+Theft verification with 50 queries: is_stolen=False, confidence=0.0000, p_value=1.000000
+Comprehensive metrics with 50 queries: fidelity=0.0543, retention=0.1429, test_acc_gap=0.7275, kl_divergence=1.6197, detectability=0.1640

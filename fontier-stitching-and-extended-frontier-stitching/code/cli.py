@@ -119,18 +119,56 @@ def generate_watermark(config, model_path, dataset, eps, sample_sizes):
     click.echo("✅ Watermark generation completed!")
 
 
+def _extract_dataset_from_path(path: str) -> str:
+    """Extract dataset name from file path."""
+    path_lower = path.lower()
+    if 'cifar10' in path_lower:
+        return 'cifar10'
+    elif 'mnist' in path_lower:
+        return 'mnist'
+    return 'cifar10'  # Default
+
+def _extract_model_architecture_from_path(path: str) -> str:
+    """Extract model architecture from file path."""
+    path_lower = path.lower()
+    if 'cifar10_base_2' in path_lower or 'CIFAR10_BASE_2' in path:
+        return 'cifar10_base_2'
+    elif 'mnist_l2' in path_lower or 'MNIST_L2' in path:
+        return 'mnist_l2'
+    # Try to infer from dataset
+    if 'cifar10' in path_lower:
+        return 'cifar10_base_2'
+    elif 'mnist' in path_lower:
+        return 'mnist_l2'
+    return 'cifar10_base_2'  # Default
+
+def _extract_which_adv_from_path(path: str) -> str:
+    """Extract which_adv (true/false/full) from path."""
+    path_lower = path.lower()
+    if '/true/' in path_lower or '/true' in path_lower:
+        return 'true'
+    elif '/false/' in path_lower or '/false' in path_lower:
+        return 'false'
+    elif '/full/' in path_lower or '/full' in path_lower:
+        return 'full'
+    return 'true'  # Default
+
 @cli.command()
 @click.option('--config', '-c', type=click.Path(exists=True),
               help='Path to YAML configuration file')
 @click.option('--model-path', required=True, type=click.Path(exists=True),
-              help='Path to unwatermarked model')
+              help='Path to unwatermarked model (for finetuning) or model architecture name (for retraining)')
 @click.option('--watermark-path', required=True, type=click.Path(exists=True),
               help='Path to watermark data (.npz file)')
 @click.option('--epochs', default=10, type=int,
-              help='Number of fine-tuning epochs')
+              help='Number of fine-tuning/retraining epochs')
 @click.option('--method', type=click.Choice(['finetuning', 'retraining'], case_sensitive=False),
               default='finetuning', help='Watermarking method')
-def watermark(config, model_path, watermark_path, epochs, method):
+@click.option('--dataset', default=None,
+              help='Dataset name (auto-detected from path if not provided)')
+@click.option('--model-arch', default=None,
+              help='Model architecture (auto-detected from path if not provided, required for retraining)')
+def watermark(config, model_path, watermark_path, epochs, method, dataset, model_arch):
     """Watermark a model via fine-tuning or retraining."""
     click.echo(f"💧 Watermarking model using {method}...")
     
@@ -139,16 +177,23 @@ def watermark(config, model_path, watermark_path, epochs, method):
         watermark_config = exp_config.watermark
         epochs = watermark_config.finetuning_epochs
     
+    # Extract dataset name if not provided
+    if dataset is None:
+        dataset = _extract_dataset_from_path(watermark_path)
+    
+    click.echo(f"   Dataset: {dataset}")
     click.echo(f"   Model: {model_path}")
     click.echo(f"   Watermark: {watermark_path}")
     click.echo(f"   Epochs: {epochs}")
     
     if method == 'finetuning':
         from watermarking_finetuning import watermark_finetuning
-        # Extract dataset name from watermark path
-        dataset_name = 'cifar10'  # Default, should be extracted from path
+        
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(f"Model path does not exist: {model_path}")
+        
         watermark_finetuning(
-            dataset_name=dataset_name,
+            dataset_name=dataset,
             adv_data_path_numpy=watermark_path,
             model_to_finetune_path=model_path,
             epochs=epochs,
@@ -159,10 +204,48 @@ def watermark(config, model_path, watermark_path, epochs, method):
             weight_decay=0,
             num_layers_unfreeze=10
         )
-    else:
+    else:  # retraining
         from watermarking_retraining import watermark_retraining
-        # Similar call for retraining
-        click.echo("⚠️  Retraining method requires additional parameters")
+        import watermarking_retraining as wm_retraining_module
+        from datetime import datetime
+        
+        # Determine model architecture
+        if model_arch is None:
+            # Try to extract from model_path (if it's a path) or use default
+            if os.path.exists(model_path):
+                model_arch = _extract_model_architecture_from_path(model_path)
+            else:
+                # Assume model_path is actually the architecture name
+                model_arch = model_path
+                model_path = None  # Not needed for retraining
+        
+        click.echo(f"   Model Architecture: {model_arch}")
+        
+        # Extract which_adv from watermark path
+        which_adv = _extract_which_adv_from_path(watermark_path)
+        
+        # Set global variables that watermark_retraining expects
+        now = datetime.now().strftime("%d-%m-%Y")
+        wm_retraining_module.RESULTS_PATH = f"../results/finetuned_retraining_{now}"
+        wm_retraining_module.DATA_PATH = "../data"
+        wm_retraining_module.MODEL_PATH = f"../models/finetuned_retraining_{now}"
+        wm_retraining_module.LOSS_FOLDER = "losses"
+        
+        # Create directories
+        os.makedirs(os.path.join(wm_retraining_module.RESULTS_PATH, wm_retraining_module.LOSS_FOLDER, which_adv), exist_ok=True)
+        os.makedirs(os.path.join(wm_retraining_module.MODEL_PATH, which_adv), exist_ok=True)
+        
+        watermark_retraining(
+            dataset_name=dataset,
+            adv_data_path_numpy=watermark_path,
+            model_architecture=model_arch,
+            epochs=epochs,
+            dropout=0,
+            batch_size=128,
+            optimizer='adam',
+            lr=0.001,  # Retraining typically uses higher LR
+            weight_decay=0
+        )
     
     click.echo("✅ Model watermarking completed!")
 

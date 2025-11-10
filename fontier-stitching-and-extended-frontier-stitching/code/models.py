@@ -77,7 +77,8 @@ def CIFAR10_BASE_2(input_shape = (32,32,3), dropout=0.0, num_classes=10):
 
     model = tf.keras.models.Sequential()
 
-    model.add(layers.Conv2D(32, (3, 3), padding='same', activation='relu', input_shape=(32, 32, 3)))
+    # Use the provided input_shape instead of hardcoding (32, 32, 3)
+    model.add(layers.Conv2D(32, (3, 3), padding='same', activation='relu', input_shape=input_shape))
     model.add(layers.BatchNormalization())
     model.add((layers.Conv2D(32, (3, 3), padding='same', activation='relu')))
     model.add(layers.BatchNormalization())
@@ -95,7 +96,10 @@ def CIFAR10_BASE_2(input_shape = (32,32,3), dropout=0.0, num_classes=10):
     model.add(layers.BatchNormalization())
     model.add(layers.MaxPooling2D(pool_size=(2, 2)))
     model.add(layers.Dropout(0.5))
-    model.add(layers.Flatten())
+    
+    # Use GlobalAveragePooling2D instead of Flatten to handle variable input sizes
+    # This produces a fixed-size output (128 features) regardless of input size
+    model.add(layers.GlobalAveragePooling2D())
     model.add(layers.Dense(128, activation="relu"))
     model.add(layers.BatchNormalization())
     model.add(layers.Dropout(0.5))

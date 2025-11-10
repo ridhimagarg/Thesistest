@@ -26,7 +26,7 @@ from tensorflow.keras.callbacks import LearningRateScheduler, Callback
 import matplotlib.pyplot as plt
 import models
 from utils.data_utils import DataManager
-from utils.performance_utils import enable_mixed_precision, optimize_gpu_memory
+from utils.performance_utils import enable_mixed_precision, optimize_gpu_memory, create_data_generator_with_validation
 from utils.experiment_logger import ExperimentLogger, log_reproducibility_info
 
 warnings.filterwarnings('ignore')
@@ -88,35 +88,81 @@ def data_preprocessing(dataset_name, adv_data_path_numpy):
     print(x_adv.shape)
     print(y_adv.shape)
 
+    # Check if adversarial data is empty or has wrong shape
+    if len(x_adv.shape) == 1 or (len(x_adv.shape) > 1 and x_adv.shape[0] == 0):
+        raise ValueError(
+            f"Adversarial data is empty! Shape: {x_adv.shape}. "
+            f"This usually means no adversarial examples were generated or the file is corrupted. "
+            f"Please check:\n"
+            f"  1. The adversarial generation step completed successfully\n"
+            f"  2. The file path is correct: {adv_data_path_numpy}\n"
+            f"  3. Try using a larger epsilon value or different 'which_adv' setting (true/false/full)\n"
+            f"  4. For small epsilon values, most examples may remain correctly classified, "
+            f"   resulting in empty 'true' or 'false' adversary sets"
+        )
+
+    # Ensure x_adv has the correct shape (should be 4D: batch, height, width, channels)
+    if len(x_adv.shape) != 4:
+        raise ValueError(
+            f"Adversarial data has incorrect shape: {x_adv.shape}. "
+            f"Expected 4D array (batch, height, width, channels), got {len(x_adv.shape)}D. "
+            f"This may indicate the adversarial data file is corrupted or in the wrong format."
+        )
+
     # Split adversarial data into train/test (90/10 split)
-    idx = np.random.randint(x_adv.shape[0], size=x_adv.shape[0])
-    x_train_adv = x_adv[idx[:int(len(idx) * 0.9)]]
-    y_train_adv = y_adv[idx[:int(len(idx) * 0.9)]]
-    x_test_adv = x_adv[idx[int(len(idx) * 0.9):]]
-    y_test_adv = y_adv[idx[int(len(idx) * 0.9):]]
+    if x_adv.shape[0] > 0:
+        idx = np.random.permutation(x_adv.shape[0])
+        train_size = int(len(idx) * 0.9)
+        x_train_adv = x_adv[idx[:train_size]]
+        y_train_adv = y_adv[idx[:train_size]]
+        x_test_adv = x_adv[idx[train_size:]]
+        y_test_adv = y_adv[idx[train_size:]]
+    else:
+        # Fallback: create empty arrays with correct shape
+        x_train_adv = np.empty((0,) + x_adv.shape[1:], dtype=x_adv.dtype)
+        y_train_adv = np.empty((0,) + y_adv.shape[1:], dtype=y_adv.dtype)
+        x_test_adv = np.empty((0,) + x_adv.shape[1:], dtype=x_adv.dtype)
+        y_test_adv = np.empty((0,) + y_adv.shape[1:], dtype=y_adv.dtype)
 
     # Select matching amount of regular training data
-    x_train_selected = x_train[:int(len(idx) * 0.9)]
-    y_train_selected = y_train[:int(len(idx) * 0.9)]
+    adv_train_size = len(x_train_adv)
+    x_train_selected = x_train[:adv_train_size] if adv_train_size > 0 else x_train[:0]
+    y_train_selected = y_train[:adv_train_size] if adv_train_size > 0 else y_train[:0]
 
-    # Combine regular and adversarial data
-    x_combined = np.concatenate((x_train_selected, x_train_adv), axis=0)
-    y_combined = np.concatenate((y_train_selected, y_train_adv), axis=0)
+    # Combine regular and adversarial data (handle empty arrays)
+    if adv_train_size > 0:
+        x_combined = np.concatenate((x_train_selected, x_train_adv), axis=0)
+        y_combined = np.concatenate((y_train_selected, y_train_adv), axis=0)
+    else:
+        # If no adversarial data, use only regular training data
+        x_combined = x_train_selected
+        y_combined = y_train_selected
 
-    # Create combined train/val splits
-    x_combined_train = np.concatenate(
-        (x_train[: int(len(x_train_selected) * 0.9)], x_train_adv[: int(len(x_train_adv) * 0.9)]),
-        axis=0)
-    y_combined_train = np.concatenate(
-        (y_train[: int(len(y_train_selected) * 0.9)], y_train_adv[: int(len(y_train_adv) * 0.9)]),
-        axis=0)
-
-    x_combined_val = np.concatenate(
-        (x_train[int(len(x_train_selected) * 0.9):], x_train_adv[int(len(x_train_adv) * 0.9):]),
-        axis=0)
-    y_combined_val = np.concatenate(
-        (y_train[int(len(y_train_selected) * 0.9):], y_train_adv[int(len(y_train_adv) * 0.9):]),
-        axis=0)
+    # Create combined train/val splits (handle empty arrays)
+    train_split_size = int(len(x_train_selected) * 0.9) if len(x_train_selected) > 0 else 0
+    adv_train_split_size = int(len(x_train_adv) * 0.9) if len(x_train_adv) > 0 else 0
+    
+    if train_split_size > 0 or adv_train_split_size > 0:
+        x_combined_train = np.concatenate(
+            (x_train[:train_split_size], x_train_adv[:adv_train_split_size]),
+            axis=0) if adv_train_split_size > 0 else x_train[:train_split_size]
+        y_combined_train = np.concatenate(
+            (y_train[:train_split_size], y_train_adv[:adv_train_split_size]),
+            axis=0) if adv_train_split_size > 0 else y_train[:train_split_size]
+        
+        x_combined_val = np.concatenate(
+            (x_train[train_split_size:], x_train_adv[adv_train_split_size:]),
+            axis=0) if len(x_train_adv) > adv_train_split_size else x_train[train_split_size:]
+        y_combined_val = np.concatenate(
+            (y_train[train_split_size:], y_train_adv[adv_train_split_size:]),
+            axis=0) if len(y_train_adv) > adv_train_split_size else y_train[train_split_size:]
+    else:
+        # Fallback: use regular training data splits
+        val_split = int(len(x_train) * 0.9)
+        x_combined_train = x_train[:val_split]
+        y_combined_train = y_train[:val_split]
+        x_combined_val = x_train[val_split:]
+        y_combined_val = y_train[val_split:]
 
     return x_train, y_train, x_test, y_test, x_adv, y_adv, x_train_adv, y_train_adv, x_test_adv, y_test_adv, x_combined, y_combined, x_combined_train, y_combined_train, x_combined_val, y_combined_val, input_shape, num_classes
 
@@ -360,8 +406,23 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
     file1.write(f"Loaded model test acc: {test_acc[1]} \n")
 
     ## fiunetuning the model to watermark it.
-    history = model.fit(x_train_adv, y_train_adv, shuffle=True, batch_size=batch_size, epochs=epochs,
-                        verbose=1, validation_split=0.2,
+    # Optimized: Use tf.data.Dataset for better performance
+    # Split validation data manually since we're using tf.data
+    val_split = 0.2
+    val_size = int(len(x_train_adv) * val_split)
+    x_val_adv = x_train_adv[:val_size]
+    y_val_adv = y_train_adv[:val_size]
+    x_train_adv_split = x_train_adv[val_size:]
+    y_train_adv_split = y_train_adv[val_size:]
+    
+    # Create tf.data.Dataset with prefetching
+    train_ds = tf.data.Dataset.from_tensor_slices((x_train_adv_split, y_train_adv_split))
+    train_ds = train_ds.shuffle(min(10000, len(x_train_adv_split))).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    
+    val_ds = tf.data.Dataset.from_tensor_slices((x_val_adv, y_val_adv))
+    val_ds = val_ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    
+    history = model.fit(train_ds, epochs=epochs, verbose=1, validation_data=val_ds,
                         callbacks=[model_checkpoint_callback, lrate, normal_data_acc_callback((x_test, y_test)), time_callback])  ## check for validation 
     print(history.history.keys())
 

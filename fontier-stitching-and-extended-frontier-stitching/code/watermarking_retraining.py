@@ -81,26 +81,74 @@ def data_preprocessing(dataset_name, adv_data_path_numpy):
     print(x_adv.shape)
     print(y_adv.shape)
 
+    # Check if adversarial data is empty or has wrong shape
+    if len(x_adv.shape) == 1 or (len(x_adv.shape) > 1 and x_adv.shape[0] == 0):
+        raise ValueError(
+            f"Adversarial data is empty! Shape: {x_adv.shape}. "
+            f"This usually means no adversarial examples were generated or the file is corrupted. "
+            f"Please check:\n"
+            f"  1. The adversarial generation step completed successfully\n"
+            f"  2. The file path is correct: {adv_data_path_numpy}\n"
+            f"  3. Try using a larger epsilon value or different 'which_adv' setting (true/false/full)\n"
+            f"  4. For small epsilon values, most examples may remain correctly classified, "
+            f"   resulting in empty 'true' or 'false' adversary sets"
+        )
+
+    # Ensure x_adv has the correct shape (should be 4D: batch, height, width, channels)
+    if len(x_adv.shape) != 4:
+        raise ValueError(
+            f"Adversarial data has incorrect shape: {x_adv.shape}. "
+            f"Expected 4D array (batch, height, width, channels), got {len(x_adv.shape)}D. "
+            f"This may indicate the adversarial data file is corrupted or in the wrong format."
+        )
+
     # Split adversarial data into train/test (90/10 split)
-    idx = np.random.randint(x_adv.shape[0], size=x_adv.shape[0])
-    x_train_adv = x_adv[idx[:int(len(idx) * 0.9)]]
-    y_train_adv = y_adv[idx[:int(len(idx) * 0.9)]]
-    x_test_adv = x_adv[idx[int(len(idx) * 0.9):]]
-    y_test_adv = y_adv[idx[int(len(idx) * 0.9):]]
+    if x_adv.shape[0] > 0:
+        idx = np.random.permutation(x_adv.shape[0])
+        train_size = int(len(idx) * 0.9)
+        x_train_adv = x_adv[idx[:train_size]]
+        y_train_adv = y_adv[idx[:train_size]]
+        x_test_adv = x_adv[idx[train_size:]]
+        y_test_adv = y_adv[idx[train_size:]]
+    else:
+        # Fallback: create empty arrays with correct shape
+        x_train_adv = np.empty((0,) + x_adv.shape[1:], dtype=x_adv.dtype)
+        y_train_adv = np.empty((0,) + y_adv.shape[1:], dtype=y_adv.dtype)
+        x_test_adv = np.empty((0,) + x_adv.shape[1:], dtype=x_adv.dtype)
+        y_test_adv = np.empty((0,) + y_adv.shape[1:], dtype=y_adv.dtype)
 
-    # Create combined train/val splits
-    x_combined_train = np.concatenate((x_train[: int(len(x_train) * 0.9)], x_train_adv[: int(len(x_train_adv) * 0.9)]),
-                                      axis=0)
-    y_combined_train = np.concatenate((y_train[: int(len(y_train) * 0.9)], y_train_adv[: int(len(y_train_adv) * 0.9)]),
-                                      axis=0)
+    # Create combined train/val splits (handle empty arrays)
+    train_split_size = int(len(x_train) * 0.9)
+    adv_train_split_size = int(len(x_train_adv) * 0.9) if len(x_train_adv) > 0 else 0
+    
+    if adv_train_split_size > 0:
+        x_combined_train = np.concatenate(
+            (x_train[:train_split_size], x_train_adv[:adv_train_split_size]),
+            axis=0)
+        y_combined_train = np.concatenate(
+            (y_train[:train_split_size], y_train_adv[:adv_train_split_size]),
+            axis=0)
+        
+        x_combined_val = np.concatenate(
+            (x_train[train_split_size:], x_train_adv[adv_train_split_size:]),
+            axis=0)
+        y_combined_val = np.concatenate(
+            (y_train[train_split_size:], y_train_adv[adv_train_split_size:]),
+            axis=0)
+    else:
+        # If no adversarial data, use only regular training data
+        x_combined_train = x_train[:train_split_size]
+        y_combined_train = y_train[:train_split_size]
+        x_combined_val = x_train[train_split_size:]
+        y_combined_val = y_train[train_split_size:]
 
-    x_combined_val = np.concatenate((x_train[int(len(x_train) * 0.9):], x_train_adv[int(len(x_train_adv) * 0.9):]),
-                                    axis=0)
-    y_combined_val = np.concatenate((y_train[int(len(y_train) * 0.9):], y_train_adv[int(len(y_train_adv) * 0.9):]),
-                                    axis=0)
-
-    x_combined = np.concatenate((x_train, x_train_adv), axis=0)
-    y_combined = np.concatenate((y_train, y_train_adv), axis=0)
+    # Combine all data
+    if len(x_train_adv) > 0:
+        x_combined = np.concatenate((x_train, x_train_adv), axis=0)
+        y_combined = np.concatenate((y_train, y_train_adv), axis=0)
+    else:
+        x_combined = x_train
+        y_combined = y_train
 
     return x_train, y_train, x_test, y_test, x_adv, y_adv, x_train_adv, y_train_adv, x_test_adv, y_test_adv, x_combined, y_combined, x_combined_train, y_combined_train, x_combined_val, y_combined_val, input_shape, num_classes
 

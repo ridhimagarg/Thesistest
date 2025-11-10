@@ -270,7 +270,8 @@ class ExperimentRunner:
             lr_decay_epochs=self.config.get('lr_decay_epochs', [30, 40]),
             beta_1=self.config.get('beta_1', 0.9),
             beta_2=self.config.get('beta_2', 0.999),
-            epsilon=self.config.get('epsilon', 1e-7)
+            epsilon=self.config.get('epsilon', 1e-7),
+            use_mixed_precision=self.config.get('use_mixed_precision', False)
         )
         
         # Determine model path
@@ -325,9 +326,16 @@ class ExperimentRunner:
                         logger.warning(f"   Failed to generate for eps={eps}, size={sample_size}: {e}")
                         continue
             
-            # Use the first attack type and first combination for watermarking
-            eps = self.config['eps_list'][0]
-            size = self.config['adversarial_sample_size_list'][0]
+            # Check if any files were successfully generated
+            if not generated_files:
+                raise RuntimeError(
+                    f"Failed to generate any adversarial examples. "
+                    f"Tried {len(self.config['eps_list']) * len(self.config['adversarial_sample_size_list'])} combinations."
+                )
+            
+            # Use the first successfully generated combination for watermarking
+            # If the first combination failed, use the first successful one
+            eps, size, _ = generated_files[0]
             attack_type = attack_types[0]
             model_path_normalized = self.config['model_path'].replace("\\", "/")
             model_parts = model_path_normalized.split("/")[-2:]
@@ -377,65 +385,118 @@ class ExperimentRunner:
                         logger.warning(f"   Failed to generate for eps={eps}, size={sample_size}: {e}")
                         continue
             
+            # Check if any files were successfully generated
+            if not generated_files:
+                raise RuntimeError(
+                    f"Failed to generate any adversarial examples. "
+                    f"Tried {len(self.config['eps_list']) * len(self.config['adversarial_sample_size_list'])} combinations."
+                )
+            
             # Find the generated adversarial file
             # The path structure is: ../data/fgsm/{dataset_name}/{which_adv}/fgsm_{eps}_{size}_{model_name}.npz
             model_path_normalized = self.config['model_path'].replace("\\", "/")
             model_parts = model_path_normalized.split("/")[-2:]
             model_name = "_".join(model_parts).replace(".h5", "").replace(".keras", "")
             
-            # Use the first combination for watermarking
-            eps = self.config['eps_list'][0]
-            size = self.config['adversarial_sample_size_list'][0]
+            # Use the first successfully generated combination for watermarking
+            # If the first combination failed, use the first successful one
+            eps, size = generated_files[0]
             base_filename = f"fgsm_{eps}_{size}_{model_name}.npz"
             adv_path = f"../data/fgsm/{self.config['dataset_name']}/{self.config.get('which_adv', 'true')}/{base_filename}"
         
+        # Verify the file exists
         if not os.path.exists(adv_path):
-            raise FileNotFoundError(f"Adversarial file not found. Expected: {adv_path}")
+            # Try to provide helpful error message
+            error_msg = f"Adversarial file not found. Expected: {adv_path}"
+            if 'generated_files' in locals():
+                error_msg += f"\nSuccessfully generated {len(generated_files)} file(s): {generated_files}"
+            raise FileNotFoundError(error_msg)
         
         self.config['adversarial_path'] = adv_path
         logger.info(f"   Adversarial examples saved to: {adv_path}")
         
         return adv_path
     
-    def step3_watermark_model(self):
-        """Step 3: Watermark the model via finetuning."""
-        logger.info("Step 3: Watermarking model via finetuning...")
+    def step3_watermark_model(self, method='finetuning'):
+        """Step 3: Watermark the model via finetuning or retraining.
         
-        if not self.config['model_path']:
-            raise ValueError("Model path not set. Run step1_train_original first.")
-        if not self.config['adversarial_path']:
-            raise ValueError("Adversarial path not set. Run step2_generate_adversarial first.")
+        Args:
+            method: 'finetuning' or 'retraining'
+        """
+        logger.info(f"Step 3: Watermarking model via {method}...")
         
-        # Import and run watermarking
-        from watermarking_finetuning import watermark_finetuning
+        if method == 'retraining':
+            if not self.config['adversarial_path']:
+                raise ValueError("Adversarial path not set. Run step2_generate_adversarial first.")
+            if 'model_architecture' not in self.config:
+                raise ValueError("Model architecture not set in config.")
+        else:  # finetuning
+            if not self.config['model_path']:
+                raise ValueError("Model path not set. Run step1_train_original first.")
+            if not self.config['adversarial_path']:
+                raise ValueError("Adversarial path not set. Run step2_generate_adversarial first.")
         
         # Set results path for watermarking
         now = datetime.now().strftime("%d-%m-%Y")
-        watermark_results_path = f"../results/finetuned_finetuning_{now}"
+        watermark_results_path = f"../results/finetuned_{method}_{now}"
         
-        model = watermark_finetuning(
-            dataset_name=self.config['dataset_name'],
-            adv_data_path_numpy=self.config['adversarial_path'],
-            model_to_finetune_path=self.config['model_path'],
-            epochs=self.config['epochs_watermarking'],
-            dropout=self.config.get('watermark_dropout', self.config['dropout']),
-            batch_size=self.config.get('watermark_batch_size', self.config['batch_size']),
-            optimizer=self.config.get('watermark_optimizer', self.config['optimizer']),
-            lr=self.config.get('watermark_lr', 0.0001),
-            weight_decay=self.config.get('watermark_weight_decay', 0.0),
-            num_layers_unfreeze=self.config.get('num_layers_unfreeze', 1),
-            lr_schedule_enabled=self.config.get('watermark_lr_schedule_enabled', True),
-            lr_decay_factor=self.config.get('watermark_lr_decay_factor', 0.5),
-            lr_decay_epochs=self.config.get('watermark_lr_decay_epochs', [8, 12]),
-            results_path=watermark_results_path
-        )
-        
-        # Determine watermarked model path
-        now = datetime.now().strftime("%d-%m-%Y")
-        model_name = self.config['model_path'].replace("\\", "/").split("/")[-2]
-        adv_name = self.config['adversarial_path'].replace("\\", "/").split("/")[-1].split(".npz")[0]
-        
-        watermarked_path = f"../models/finetuned_finetuning_{now}/{self.config['which_adv']}/{self.config['dataset_name']}_{self.config['epochs_watermarking']}_{self.config['epochs_watermarking']}_{model_name}{adv_name}/Victim_checkpoint_best.keras"
+        if method == 'finetuning':
+            from watermarking_finetuning import watermark_finetuning
+            
+            model = watermark_finetuning(
+                dataset_name=self.config['dataset_name'],
+                adv_data_path_numpy=self.config['adversarial_path'],
+                model_to_finetune_path=self.config['model_path'],
+                epochs=self.config['epochs_watermarking'],
+                dropout=self.config.get('watermark_dropout', self.config['dropout']),
+                batch_size=self.config.get('watermark_batch_size', self.config['batch_size']),
+                optimizer=self.config.get('watermark_optimizer', self.config['optimizer']),
+                lr=self.config.get('watermark_lr', 0.0001),
+                weight_decay=self.config.get('watermark_weight_decay', 0.0),
+                num_layers_unfreeze=self.config.get('num_layers_unfreeze', 1),
+                lr_schedule_enabled=self.config.get('watermark_lr_schedule_enabled', True),
+                lr_decay_factor=self.config.get('watermark_lr_decay_factor', 0.5),
+                lr_decay_epochs=self.config.get('watermark_lr_decay_epochs', [8, 12]),
+                results_path=watermark_results_path
+            )
+            
+            # Determine watermarked model path
+            model_name = self.config['model_path'].replace("\\", "/").split("/")[-2]
+            adv_name = self.config['adversarial_path'].replace("\\", "/").split("/")[-1].split(".npz")[0]
+            
+            watermarked_path = f"../models/finetuned_finetuning_{now}/{self.config['which_adv']}/{self.config['dataset_name']}_{self.config['epochs_watermarking']}_{self.config['epochs_watermarking']}_{model_name}{adv_name}/Victim_checkpoint_best.keras"
+            
+        else:  # retraining
+            from watermarking_retraining import watermark_retraining
+            import watermarking_retraining as wm_retraining_module
+            
+            # Set global variables that watermark_retraining expects
+            wm_retraining_module.RESULTS_PATH = watermark_results_path
+            wm_retraining_module.DATA_PATH = "../data"
+            wm_retraining_module.MODEL_PATH = f"../models/finetuned_retraining_{now}"
+            wm_retraining_module.LOSS_FOLDER = "losses"
+            
+            # Create directories
+            os.makedirs(os.path.join(wm_retraining_module.RESULTS_PATH, wm_retraining_module.LOSS_FOLDER, self.config['which_adv']), exist_ok=True)
+            os.makedirs(os.path.join(wm_retraining_module.MODEL_PATH, self.config['which_adv']), exist_ok=True)
+            
+            model = watermark_retraining(
+                dataset_name=self.config['dataset_name'],
+                adv_data_path_numpy=self.config['adversarial_path'],
+                model_architecture=self.config['model_architecture'],
+                epochs=self.config['epochs_watermarking'],
+                dropout=self.config.get('watermark_dropout', self.config['dropout']),
+                batch_size=self.config.get('watermark_batch_size', self.config['batch_size']),
+                optimizer=self.config.get('watermark_optimizer', 'adam'),
+                lr=self.config.get('watermark_lr', 0.001),  # Higher LR for retraining
+                weight_decay=self.config.get('watermark_weight_decay', 0.0)
+            )
+            
+            # Determine watermarked model path for retraining
+            adv_name = self.config['adversarial_path'].replace("\\", "/").split("/")[-1].split(".npz")[0]
+            model_arch_short = self.config['model_architecture'].replace('_', '').upper()
+            
+            watermarked_path = f"../models/finetuned_retraining_{now}/{self.config['which_adv']}/{self.config['dataset_name']}_{self.config['epochs_watermarking']}_{model_arch_short}{adv_name}/Victim_checkpoint_best.keras"
         
         if not os.path.exists(watermarked_path):
             raise FileNotFoundError(f"Watermarked model not found at expected path: {watermarked_path}")
@@ -477,7 +538,8 @@ class ExperimentRunner:
         return df, df_adv
     
     def run_complete_experiment(self, skip_training=False, skip_adversarial=False, 
-                                skip_watermarking=False, skip_attack=False):
+                                skip_watermarking=False, skip_attack=False,
+                                watermark_method='finetuning', run_both_methods=False):
         """
         Run the complete experiment pipeline.
         
@@ -486,6 +548,8 @@ class ExperimentRunner:
             skip_adversarial: Skip step 2 if adversarial examples exist
             skip_watermarking: Skip step 3 if watermarked model exists
             skip_attack: Skip step 4 if attack results exist
+            watermark_method: 'finetuning' or 'retraining'
+            run_both_methods: If True, run both finetuning and retraining for comparison
         """
         try:
             # Step 1: Train original model
@@ -506,7 +570,33 @@ class ExperimentRunner:
             
             # Step 3: Watermark the model
             if not skip_watermarking:
-                self.run_step("Watermark Model", self.step3_watermark_model)
+                if run_both_methods:
+                    logger.info("🔄 Running both watermarking methods for comparison...")
+                    
+                    # Run finetuning
+                    logger.info("\n" + "="*60)
+                    logger.info("Method 1: Fine-tuning")
+                    logger.info("="*60)
+                    self.run_step("Watermark Model (Fine-tuning)", 
+                                lambda: self.step3_watermark_model(method='finetuning'))
+                    finetuned_path = self.config['watermarked_model_path']
+                    
+                    # Run retraining
+                    logger.info("\n" + "="*60)
+                    logger.info("Method 2: Retraining")
+                    logger.info("="*60)
+                    self.run_step("Watermark Model (Retraining)", 
+                                lambda: self.step3_watermark_model(method='retraining'))
+                    retrained_path = self.config['watermarked_model_path']
+                    
+                    logger.info("\n" + "="*60)
+                    logger.info("✅ Both methods completed!")
+                    logger.info(f"   Fine-tuned model: {finetuned_path}")
+                    logger.info(f"   Retrained model: {retrained_path}")
+                    logger.info("="*60)
+                else:
+                    self.run_step("Watermark Model", 
+                                lambda: self.step3_watermark_model(method=watermark_method))
             else:
                 logger.info("⏭️  Skipping Step 3: Watermarking (using existing watermarked model)")
                 if not self.config['watermarked_model_path']:
@@ -583,6 +673,10 @@ Examples:
                         help='Skip step 4: Model extraction attack')
     parser.add_argument('--config', type=str, default=None,
                         help='Path to YAML or JSON configuration file (default: configs/default.yaml)')
+    parser.add_argument('--method', choices=['finetuning', 'retraining'], 
+                       default='finetuning', help='Watermarking method (default: finetuning)')
+    parser.add_argument('--run-both', action='store_true',
+                       help='Run both finetuning and retraining for comparison')
     parser.add_argument('--all-datasets', action='store_true',
                         help='Run experiment on all RGB datasets (cifar10, cifar100, svhn, stl10, eurosat)')
     parser.add_argument('--datasets', nargs='+', type=str, default=None,
@@ -631,7 +725,9 @@ Examples:
                     skip_training=args.skip_training,
                     skip_adversarial=args.skip_adversarial,
                     skip_watermarking=args.skip_watermarking,
-                    skip_attack=args.skip_attack
+                    skip_attack=args.skip_attack,
+                    watermark_method=args.method,
+                    run_both_methods=args.run_both
                 )
                 logger.info(f"✅ Completed experiment for {dataset_name}")
             except Exception as e:
@@ -648,7 +744,9 @@ Examples:
             skip_training=args.skip_training,
             skip_adversarial=args.skip_adversarial,
             skip_watermarking=args.skip_watermarking,
-            skip_attack=args.skip_attack
+            skip_attack=args.skip_attack,
+            watermark_method=args.method,
+            run_both_methods=args.run_both
         )
 
 

@@ -5,7 +5,7 @@ warnings.filterwarnings('ignore')
 
 import numpy as np
 import keras
-from keras.datasets import mnist, cifar10
+from keras.datasets import mnist, cifar10, cifar100
 from keras import layers
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
@@ -17,6 +17,14 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from datetime import datetime
 from keras.callbacks import LearningRateScheduler, ReduceLROnPlateau
+
+# Try to import tensorflow_datasets for additional datasets
+try:
+    import tensorflow_datasets as tfds
+    TFDS_AVAILABLE = True
+except ImportError:
+    TFDS_AVAILABLE = False
+    print("Warning: tensorflow_datasets not available. SVHN, STL10, and EuroSAT will not work.")
 
 now = datetime.now().strftime("%d-%m-%Y")
 
@@ -35,6 +43,81 @@ if not os.path.exists(os.path.join(RESULTS_PATH, LOSS_FOLDER)):
 if not os.path.exists(os.path.join(RESULTS_PATH, RESULTS_FOLDER_TRIGGERS)):
         os.makedirs(os.path.join(RESULTS_PATH, RESULTS_FOLDER_TRIGGERS))
 
+def _load_svhn():
+    """Load SVHN dataset from TensorFlow Datasets."""
+    if not TFDS_AVAILABLE:
+        raise ImportError("tensorflow_datasets is required for SVHN. Install with: pip install tensorflow-datasets")
+    train_ds = tfds.load('svhn_cropped', split='train', as_supervised=True, shuffle_files=True)
+    test_ds = tfds.load('svhn_cropped', split='test', as_supervised=True, shuffle_files=False)
+    
+    x_train, y_train = [], []
+    for img, label in train_ds:
+        x_train.append(img.numpy())
+        y_train.append(label.numpy())
+    
+    x_test, y_test = [], []
+    for img, label in test_ds:
+        x_test.append(img.numpy())
+        y_test.append(label.numpy())
+    
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    x_test = np.array(x_test)
+    y_test = np.array(y_test)
+    
+    return (x_train, y_train), (x_test, y_test)
+
+
+def _load_stl10():
+    """Load STL-10 dataset from TensorFlow Datasets."""
+    if not TFDS_AVAILABLE:
+        raise ImportError("tensorflow_datasets is required for STL-10. Install with: pip install tensorflow-datasets")
+    train_ds = tfds.load('stl10', split='train', as_supervised=True, shuffle_files=True)
+    test_ds = tfds.load('stl10', split='test', as_supervised=True, shuffle_files=False)
+    
+    x_train, y_train = [], []
+    for img, label in train_ds:
+        x_train.append(img.numpy())
+        y_train.append(label.numpy())
+    
+    x_test, y_test = [], []
+    for img, label in test_ds:
+        x_test.append(img.numpy())
+        y_test.append(label.numpy())
+    
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    x_test = np.array(x_test)
+    y_test = np.array(y_test)
+    
+    return (x_train, y_train), (x_test, y_test)
+
+
+def _load_eurosat():
+    """Load EuroSAT dataset from TensorFlow Datasets."""
+    if not TFDS_AVAILABLE:
+        raise ImportError("tensorflow_datasets is required for EuroSAT. Install with: pip install tensorflow-datasets")
+    train_ds = tfds.load('eurosat', split='train', as_supervised=True, shuffle_files=True)
+    test_ds = tfds.load('eurosat', split='test', as_supervised=True, shuffle_files=False)
+    
+    x_train, y_train = [], []
+    for img, label in train_ds:
+        x_train.append(img.numpy())
+        y_train.append(label.numpy())
+    
+    x_test, y_test = [], []
+    for img, label in test_ds:
+        x_test.append(img.numpy())
+        y_test.append(label.numpy())
+    
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    x_test = np.array(x_test)
+    y_test = np.array(y_test)
+    
+    return (x_train, y_train), (x_test, y_test)
+
+
 def data_preprocessing(dataset_name):
     if dataset_name == 'mnist':
         (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -46,8 +129,28 @@ def data_preprocessing(dataset_name):
         img_rows, img_cols, num_channels = 32, 32, 3
         num_classes = 10
 
+    elif dataset_name == 'cifar100':
+        (x_train, y_train), (x_test, y_test) = cifar100.load_data()
+        img_rows, img_cols, num_channels = 32, 32, 3
+        num_classes = 100
+
+    elif dataset_name == 'svhn':
+        (x_train, y_train), (x_test, y_test) = _load_svhn()
+        img_rows, img_cols, num_channels = 32, 32, 3
+        num_classes = 10
+
+    elif dataset_name == 'stl10':
+        (x_train, y_train), (x_test, y_test) = _load_stl10()
+        img_rows, img_cols, num_channels = 96, 96, 3
+        num_classes = 10
+
+    elif dataset_name == 'eurosat':
+        (x_train, y_train), (x_test, y_test) = _load_eurosat()
+        img_rows, img_cols, num_channels = 64, 64, 3
+        num_classes = 10
+
     else:
-        raise ValueError('Invalid dataset name')
+        raise ValueError(f'Invalid dataset name: {dataset_name}. Supported: mnist, cifar10, cifar100, svhn, stl10, eurosat')
 
     idx = np.random.randint(x_train.shape[0], size=len(x_train))
     x_train = x_train[idx, :]
@@ -112,7 +215,26 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
     #                      "cifar10_base_drp03": models.CIFAR10_BASE,
     #                      "cifar10_base_2": models.CIFAR10_BASE_2}
 
-    models_mapping = {"mnist_l2": models.MNIST_L2, "mnist_l2_ewe": models.MNIST_L2_EWE, "cifar10_base_2": models.CIFAR10_BASE_2}
+    # Auto-select model based on dataset if model_architecture is 'auto'
+    if model_architecture == "auto":
+        if dataset_name == "mnist":
+            model_architecture = "mnist_l2"
+        elif dataset_name in ["cifar10", "cifar100", "svhn"]:
+            # 32x32x3 RGB datasets - use CIFAR10 model
+            model_architecture = "cifar10_base_2"
+        elif dataset_name in ["stl10", "eurosat"]:
+            # Larger RGB datasets - use CIFAR10 model (will adapt to input_shape)
+            model_architecture = "cifar10_base_2"
+        else:
+            raise ValueError(f"Auto model selection not supported for dataset: {dataset_name}")
+        print(f"Auto-selected model architecture: {model_architecture} for dataset: {dataset_name}")
+
+    models_mapping = {
+        "mnist_l2": models.MNIST_L2, 
+        "mnist_l2_ewe": models.MNIST_L2_EWE, 
+        "cifar10_base_2": models.CIFAR10_BASE_2,
+        "cifar10_small": models.CIFAR10_SMALL  # Smaller model for faster experimentation
+    }
 
     x_train, y_train, x_test, y_test, input_shape, num_classes = data_preprocessing(dataset_name)
 
@@ -121,10 +243,11 @@ def train_model(dataset_name, model_architecture, epochs, dropout, batch_size=12
     if model_architecture == "resnet34":
         model_name, model = models_mapping[model_architecture]().call(input_shape)
     else:
-        if dropout:
-            model_name, model = models_mapping[model_architecture](input_shape, dropout)
+        # All models in the mapping accept input_shape, dropout, and num_classes parameters
+        if model_architecture in ["cifar10_base_2", "cifar10_small"]:
+            model_name, model = models_mapping[model_architecture](input_shape, dropout, num_classes)
         else:
-            model_name, model = models_mapping[model_architecture]()
+            model_name, model = models_mapping[model_architecture](input_shape, dropout)
 
     params["model_detail_architecture_name"] = model_name
 

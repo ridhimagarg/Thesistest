@@ -1,0 +1,21 @@
+{
+  "dataset_name": "svhn",
+  "attacker_model_architecture": "cifar10_base_2",
+  "num_epochs_to_steal": 1,
+  "dropout": 0.0,
+  "optimizer": "adam",
+  "lr": 0.001,
+  "weight_decay": 0.0,
+  "query_budgets": [
+    50
+  ],
+  "victim_model_path": "../models/finetuned_finetuning_10-11-2025/true/svhn_1_1_svhn_1_cifar10_base_2fgsm_0.01_50_svhn_1_cifar10_base_2_Original_checkpoint_best/Victim_checkpoint_best.keras",
+  "adv_data_path": "../data/fgsm/svhn/true/fgsm_0.01_50_svhn_1_cifar10_base_2_Original_checkpoint_best.npz",
+  "timestamp": "2025-11-10T11:08:38.694449",
+  "tensorflow_version": "2.19.0",
+  "python_version": "3.11.10",
+  "gpu_count": 1,
+  "gpu_names": [
+    "/physical_device:GPU:0"
+  ]
+}

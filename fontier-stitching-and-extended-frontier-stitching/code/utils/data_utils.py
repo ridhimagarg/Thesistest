@@ -7,6 +7,7 @@ eliminating the duplication of data_preprocessing() across multiple files.
 
 import os
 import logging
+import shutil
 from typing import Tuple, Optional, Dict, Any
 import numpy as np
 import tensorflow as tf
@@ -24,33 +25,152 @@ except ImportError:
     logger.warning("tensorflow_datasets not available. STL-10, EuroSAT, and SVHN will not work.")
 
 
+def _check_disk_space(path: str, required_gb: float = 5.0) -> Tuple[bool, float, float]:
+    """
+    Check available disk space at the given path.
+    
+    Args:
+        path: Path to check disk space for.
+        required_gb: Required space in GB (default: 5GB for large datasets).
+        
+    Returns:
+        Tuple of (has_enough_space, available_gb, total_gb).
+    """
+    try:
+        stat = shutil.disk_usage(path)
+        available_gb = stat.free / (1024 ** 3)  # Convert bytes to GB
+        total_gb = stat.total / (1024 ** 3)
+        has_enough = available_gb >= required_gb
+        return has_enough, available_gb, total_gb
+    except Exception as e:
+        logger.warning(f"Could not check disk space: {e}")
+        return True, 0.0, 0.0  # Assume enough space if check fails
+
+
+def _get_tfds_dir() -> str:
+    """Get TensorFlow Datasets directory path."""
+    try:
+        import tensorflow_datasets as tfds
+        # Try to get the actual TFDS data directory
+        tfds_dir = os.path.expanduser("~/tensorflow_datasets")
+        # Also check common alternative locations
+        alt_paths = [
+            os.path.expanduser("~/tensorflow_datasets"),
+            "/Users/akshatgupta/tensorflow_datasets",  # From error message
+            os.path.join(os.path.expanduser("~"), "tensorflow_datasets"),
+        ]
+        for path in alt_paths:
+            if os.path.exists(path):
+                return path
+        return tfds_dir  # Return default even if it doesn't exist yet
+    except Exception:
+        return os.path.expanduser("~/tensorflow_datasets")
+
+
+def _cleanup_incomplete_datasets(dataset_name: str):
+    """Clean up incomplete TensorFlow Datasets downloads."""
+    try:
+        tfds_dir = _get_tfds_dir()
+        incomplete_dir = os.path.join(tfds_dir, dataset_name)
+        
+        # Look for incomplete directories
+        if os.path.exists(incomplete_dir):
+            for item in os.listdir(incomplete_dir):
+                if item.startswith("incomplete."):
+                    incomplete_path = os.path.join(incomplete_dir, item)
+                    try:
+                        logger.info(f"Cleaning up incomplete dataset: {incomplete_path}")
+                        shutil.rmtree(incomplete_path)
+                        logger.info(f"Successfully removed incomplete dataset: {incomplete_path}")
+                    except Exception as e:
+                        logger.warning(f"Could not remove incomplete dataset {incomplete_path}: {e}")
+    except Exception as e:
+        logger.warning(f"Could not cleanup incomplete datasets: {e}")
+
+
 def _load_svhn_tfds():
     """Load SVHN dataset from TensorFlow Datasets."""
     if not TFDS_AVAILABLE:
         raise ImportError("tensorflow_datasets is required for SVHN. Install with: pip install tensorflow-datasets")
     
-    logger.info("Loading SVHN dataset from TensorFlow Datasets...")
-    train_ds = tfds.load('svhn_cropped', split='train', as_supervised=True, shuffle_files=True)
-    test_ds = tfds.load('svhn_cropped', split='test', as_supervised=True, shuffle_files=False)
+    # Check disk space before loading (SVHN needs ~2GB)
+    import tensorflow_datasets as tfds
+    tfds_dir = _get_tfds_dir()
+    has_space, available_gb, total_gb = _check_disk_space(tfds_dir, required_gb=2.0)
     
+    if not has_space:
+        _cleanup_incomplete_datasets('svhn_cropped')
+        has_space, available_gb, total_gb = _check_disk_space(tfds_dir, required_gb=2.0)
+        
+        if not has_space:
+            error_msg = (
+                f"Insufficient disk space to load SVHN dataset.\n"
+                f"  Required: ~2 GB\n"
+                f"  Available: {available_gb:.2f} GB\n"
+                f"  Please free up disk space or clean up incomplete downloads."
+            )
+            raise RuntimeError(error_msg)
+    
+    logger.info(f"Loading SVHN dataset from TensorFlow Datasets... (Available space: {available_gb:.2f} GB)")
+    
+    try:
+        train_ds = tfds.load('svhn_cropped', split='train', as_supervised=True, shuffle_files=True)
+        test_ds = tfds.load('svhn_cropped', split='test', as_supervised=True, shuffle_files=False)
+    except Exception as e:
+        if "No space left on device" in str(e) or "ResourceExhaustedError" in str(type(e).__name__):
+            _cleanup_incomplete_datasets('svhn_cropped')
+            error_msg = (
+                f"Failed to load SVHN dataset due to insufficient disk space.\n"
+                f"  Error: {str(e)}\n"
+                f"  Please free up at least 2 GB of disk space."
+            )
+            raise RuntimeError(error_msg) from e
+        raise
+    
+    # Optimized: Use batch conversion instead of per-item loops
+    def _process_batch(batch):
+        """Process a batch of images and labels."""
+        imgs, labels = batch
+        # Convert to numpy in batch
+        if hasattr(imgs, 'numpy'):
+            imgs_np = imgs.numpy()
+        else:
+            imgs_np = np.array(imgs)
+        
+        # Ensure uint8 format
+        if imgs_np.dtype != np.uint8:
+            imgs_np = (imgs_np * 255).astype(np.uint8) if imgs_np.max() <= 1.0 else imgs_np.astype(np.uint8)
+        
+        if hasattr(labels, 'numpy'):
+            labels_np = labels.numpy()
+        else:
+            labels_np = np.array(labels)
+        
+        return imgs_np, labels_np.astype(np.int32)
+    
+    # Batch processing for efficiency
     x_train, y_train = [], []
-    for img, label in train_ds:
-        # Convert to numpy and ensure uint8 format
-        img_np = img.numpy()
-        if img_np.dtype != np.uint8:
-            img_np = (img_np * 255).astype(np.uint8) if img_np.max() <= 1.0 else img_np.astype(np.uint8)
-        x_train.append(img_np)
-        y_train.append(int(label.numpy()))
+    batch_size = 1000
+    train_ds_batched = train_ds.batch(batch_size)
+    for batch in train_ds_batched:
+        imgs_batch, labels_batch = _process_batch(batch)
+        x_train.append(imgs_batch)
+        y_train.append(labels_batch)
     
     x_test, y_test = [], []
-    for img, label in test_ds:
-        img_np = img.numpy()
-        if img_np.dtype != np.uint8:
-            img_np = (img_np * 255).astype(np.uint8) if img_np.max() <= 1.0 else img_np.astype(np.uint8)
-        x_test.append(img_np)
-        y_test.append(int(label.numpy()))
+    test_ds_batched = test_ds.batch(batch_size)
+    for batch in test_ds_batched:
+        imgs_batch, labels_batch = _process_batch(batch)
+        x_test.append(imgs_batch)
+        y_test.append(labels_batch)
     
-    return (np.array(x_train), np.array(y_train)), (np.array(x_test), np.array(y_test))
+    # Concatenate batches
+    x_train = np.concatenate(x_train, axis=0) if len(x_train) > 1 else x_train[0]
+    y_train = np.concatenate(y_train, axis=0) if len(y_train) > 1 else y_train[0]
+    x_test = np.concatenate(x_test, axis=0) if len(x_test) > 1 else x_test[0]
+    y_test = np.concatenate(y_test, axis=0) if len(y_test) > 1 else y_test[0]
+    
+    return (x_train, y_train), (x_test, y_test)
 
 
 def _load_stl10():
@@ -58,28 +178,97 @@ def _load_stl10():
     if not TFDS_AVAILABLE:
         raise ImportError("tensorflow_datasets is required for STL-10. Install with: pip install tensorflow-datasets")
     
-    logger.info("Loading STL-10 dataset from TensorFlow Datasets...")
-    train_ds = tfds.load('stl10', split='train', as_supervised=True, shuffle_files=True)
-    test_ds = tfds.load('stl10', split='test', as_supervised=True, shuffle_files=False)
+    # Check disk space before loading (STL-10 needs ~5GB for download + processing)
+    import tensorflow_datasets as tfds
+    tfds_dir = _get_tfds_dir()
+    has_space, available_gb, total_gb = _check_disk_space(tfds_dir, required_gb=5.0)
     
+    if not has_space:
+        # Try to clean up incomplete downloads
+        _cleanup_incomplete_datasets('stl10')
+        has_space, available_gb, total_gb = _check_disk_space(tfds_dir, required_gb=5.0)
+        
+        if not has_space:
+            error_msg = (
+                f"Insufficient disk space to load STL-10 dataset.\n"
+                f"  Required: ~5 GB\n"
+                f"  Available: {available_gb:.2f} GB\n"
+                f"  Total: {total_gb:.2f} GB\n"
+                f"  Path: {tfds_dir}\n\n"
+                f"Please free up disk space or clean up incomplete dataset downloads:\n"
+                f"  rm -rf {tfds_dir}/stl10/incomplete.*"
+            )
+            raise RuntimeError(error_msg)
+    
+    logger.info(f"Loading STL-10 dataset from TensorFlow Datasets... (Available space: {available_gb:.2f} GB)")
+    
+    # Disable shuffling to reduce temporary file requirements when disk space is tight
+    shuffle_files = available_gb > 3.0  # Only shuffle if we have >3GB free
+    if not shuffle_files:
+        logger.warning("Disk space is limited. Disabling file shuffling to reduce temporary file requirements.")
+    
+    try:
+        train_ds = tfds.load('stl10', split='train', as_supervised=True, shuffle_files=shuffle_files)
+        test_ds = tfds.load('stl10', split='test', as_supervised=True, shuffle_files=False)
+    except Exception as e:
+        if "No space left on device" in str(e) or "ResourceExhaustedError" in str(type(e).__name__):
+            # Clean up and provide helpful error message
+            _cleanup_incomplete_datasets('stl10')
+            error_msg = (
+                f"Failed to load STL-10 dataset due to insufficient disk space.\n"
+                f"  Error: {str(e)}\n\n"
+                f"Please free up disk space. You can:\n"
+                f"  1. Clean up incomplete downloads: rm -rf {tfds_dir}/stl10/incomplete.*\n"
+                f"  2. Free up at least 5 GB of disk space\n"
+                f"  3. Check available space: df -h {tfds_dir}"
+            )
+            raise RuntimeError(error_msg) from e
+        raise
+    
+    # Optimized: Use batch conversion instead of per-item loops
+    def _process_batch(batch):
+        """Process a batch of images and labels."""
+        imgs, labels = batch
+        # Convert to numpy in batch
+        if hasattr(imgs, 'numpy'):
+            imgs_np = imgs.numpy()
+        else:
+            imgs_np = np.array(imgs)
+        
+        # Ensure uint8 format
+        if imgs_np.dtype != np.uint8:
+            imgs_np = (imgs_np * 255).astype(np.uint8) if imgs_np.max() <= 1.0 else imgs_np.astype(np.uint8)
+        
+        if hasattr(labels, 'numpy'):
+            labels_np = labels.numpy()
+        else:
+            labels_np = np.array(labels)
+        
+        return imgs_np, labels_np.astype(np.int32)
+    
+    # Batch processing for efficiency
     x_train, y_train = [], []
-    for img, label in train_ds:
-        # Convert to numpy and ensure uint8 format
-        img_np = img.numpy()
-        if img_np.dtype != np.uint8:
-            img_np = (img_np * 255).astype(np.uint8) if img_np.max() <= 1.0 else img_np.astype(np.uint8)
-        x_train.append(img_np)
-        y_train.append(int(label.numpy()))
+    batch_size = 1000
+    train_ds_batched = train_ds.batch(batch_size)
+    for batch in train_ds_batched:
+        imgs_batch, labels_batch = _process_batch(batch)
+        x_train.append(imgs_batch)
+        y_train.append(labels_batch)
     
     x_test, y_test = [], []
-    for img, label in test_ds:
-        img_np = img.numpy()
-        if img_np.dtype != np.uint8:
-            img_np = (img_np * 255).astype(np.uint8) if img_np.max() <= 1.0 else img_np.astype(np.uint8)
-        x_test.append(img_np)
-        y_test.append(int(label.numpy()))
+    test_ds_batched = test_ds.batch(batch_size)
+    for batch in test_ds_batched:
+        imgs_batch, labels_batch = _process_batch(batch)
+        x_test.append(imgs_batch)
+        y_test.append(labels_batch)
     
-    return (np.array(x_train), np.array(y_train)), (np.array(x_test), np.array(y_test))
+    # Concatenate batches
+    x_train = np.concatenate(x_train, axis=0) if len(x_train) > 1 else x_train[0]
+    y_train = np.concatenate(y_train, axis=0) if len(y_train) > 1 else y_train[0]
+    x_test = np.concatenate(x_test, axis=0) if len(x_test) > 1 else x_test[0]
+    y_test = np.concatenate(y_test, axis=0) if len(y_test) > 1 else y_test[0]
+    
+    return (x_train, y_train), (x_test, y_test)
 
 
 def _load_eurosat():
@@ -87,27 +276,85 @@ def _load_eurosat():
     if not TFDS_AVAILABLE:
         raise ImportError("tensorflow_datasets is required for EuroSAT. Install with: pip install tensorflow-datasets")
     
-    logger.info("Loading EuroSAT dataset from TensorFlow Datasets...")
-    # EuroSAT only has train split, so we split it 80/20
-    full_ds = tfds.load('eurosat', split='train', as_supervised=True, shuffle_files=True)
+    # Check disk space before loading (EuroSAT needs ~3GB)
+    import tensorflow_datasets as tfds
+    tfds_dir = _get_tfds_dir()
+    has_space, available_gb, total_gb = _check_disk_space(tfds_dir, required_gb=3.0)
     
-    # Convert to list first, ensuring uint8 format
-    data = []
-    for img, label in full_ds:
-        img_np = img.numpy()
-        if img_np.dtype != np.uint8:
-            img_np = (img_np * 255).astype(np.uint8) if img_np.max() <= 1.0 else img_np.astype(np.uint8)
-        data.append((img_np, int(label.numpy())))
+    if not has_space:
+        _cleanup_incomplete_datasets('eurosat')
+        has_space, available_gb, total_gb = _check_disk_space(tfds_dir, required_gb=3.0)
+        
+        if not has_space:
+            error_msg = (
+                f"Insufficient disk space to load EuroSAT dataset.\n"
+                f"  Required: ~3 GB\n"
+                f"  Available: {available_gb:.2f} GB\n"
+                f"  Please free up disk space or clean up incomplete downloads."
+            )
+            raise RuntimeError(error_msg)
+    
+    logger.info(f"Loading EuroSAT dataset from TensorFlow Datasets... (Available space: {available_gb:.2f} GB)")
+    
+    # Disable shuffling to reduce temporary file requirements when disk space is tight
+    shuffle_files = available_gb > 2.0
+    if not shuffle_files:
+        logger.warning("Disk space is limited. Disabling file shuffling to reduce temporary file requirements.")
+    
+    try:
+        # EuroSAT only has train split, so we split it 80/20
+        full_ds = tfds.load('eurosat', split='train', as_supervised=True, shuffle_files=shuffle_files)
+    except Exception as e:
+        if "No space left on device" in str(e) or "ResourceExhaustedError" in str(type(e).__name__):
+            _cleanup_incomplete_datasets('eurosat')
+            error_msg = (
+                f"Failed to load EuroSAT dataset due to insufficient disk space.\n"
+                f"  Error: {str(e)}\n"
+                f"  Please free up at least 3 GB of disk space."
+            )
+            raise RuntimeError(error_msg) from e
+        raise
+    
+    # Optimized: Use batch conversion instead of per-item loops
+    def _process_batch(batch):
+        """Process a batch of images and labels."""
+        imgs, labels = batch
+        # Convert to numpy in batch
+        if hasattr(imgs, 'numpy'):
+            imgs_np = imgs.numpy()
+        else:
+            imgs_np = np.array(imgs)
+        
+        # Ensure uint8 format
+        if imgs_np.dtype != np.uint8:
+            imgs_np = (imgs_np * 255).astype(np.uint8) if imgs_np.max() <= 1.0 else imgs_np.astype(np.uint8)
+        
+        if hasattr(labels, 'numpy'):
+            labels_np = labels.numpy()
+        else:
+            labels_np = np.array(labels)
+        
+        return imgs_np, labels_np.astype(np.int32)
+    
+    # Batch processing for efficiency
+    all_imgs, all_labels = [], []
+    batch_size = 1000
+    full_ds_batched = full_ds.batch(batch_size)
+    for batch in full_ds_batched:
+        imgs_batch, labels_batch = _process_batch(batch)
+        all_imgs.append(imgs_batch)
+        all_labels.append(labels_batch)
+    
+    # Concatenate all batches
+    all_imgs = np.concatenate(all_imgs, axis=0) if len(all_imgs) > 1 else all_imgs[0]
+    all_labels = np.concatenate(all_labels, axis=0) if len(all_labels) > 1 else all_labels[0]
     
     # Split 80/20
-    split_idx = int(len(data) * 0.8)
-    train_data = data[:split_idx]
-    test_data = data[split_idx:]
-    
-    x_train = np.array([img for img, _ in train_data])
-    y_train = np.array([label for _, label in train_data])
-    x_test = np.array([img for img, _ in test_data])
-    y_test = np.array([label for _, label in test_data])
+    split_idx = int(len(all_imgs) * 0.8)
+    x_train = all_imgs[:split_idx]
+    y_train = all_labels[:split_idx]
+    x_test = all_imgs[split_idx:]
+    y_test = all_labels[split_idx:]
     
     return (x_train, y_train), (x_test, y_test)
 
@@ -315,9 +562,11 @@ class DataManager:
         elif len(x_train.shape) == 4:
             # Different shape, resize if needed (for STL-10, EuroSAT which might be different sizes)
             if x_train.shape[1] != img_rows or x_train.shape[2] != img_cols:
-                # Resize images to expected size
-                x_train = tf.image.resize(x_train, [img_rows, img_cols]).numpy()
-                x_test = tf.image.resize(x_test, [img_rows, img_cols]).numpy()
+                # Resize images to expected size - batch conversion for efficiency
+                x_train_t = tf.image.resize(tf.constant(x_train, dtype=tf.float32), [img_rows, img_cols])
+                x_test_t = tf.image.resize(tf.constant(x_test, dtype=tf.float32), [img_rows, img_cols])
+                x_train = x_train_t.numpy()
+                x_test = x_test_t.numpy()
         else:
             # Need to reshape
             x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, num_channels)
