@@ -298,6 +298,9 @@ def watermark_retraining(dataset_name, adv_data_path_numpy, model_architecture, 
                                              adv_data_path_numpy.replace("\\", "/").split("/")[-1].split(".npz")[0],
                                              "Victim_checkpoint_final.keras")
 
+    # Create directory if it doesn't exist
+    final_checkpoint_dir = os.path.dirname(FINAL_CHECKPOINT_FILEPATH)
+    os.makedirs(final_checkpoint_dir, exist_ok=True)
 
     model.save(FINAL_CHECKPOINT_FILEPATH)
 

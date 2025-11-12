@@ -1,0 +1,2 @@
+query_budget,test_accuracy,watermark_accuracy,is_stolen,verification_confidence,p_value,threshold,fidelity,watermark_retention,test_acc_gap,kl_divergence,detectability_score,attack_time,stolen_model_size_params,stolen_model_size_mb
+50,0.09640000015497208,0.07999999821186066,False,0.0,0.9282102012308148,0.26999999880790715,0.029547738693467336,0.1818181787394295,0.1889447271823883,0.7517030239105225,0.3401352189536917,4.303018093109131,307114,1.1715469360351562

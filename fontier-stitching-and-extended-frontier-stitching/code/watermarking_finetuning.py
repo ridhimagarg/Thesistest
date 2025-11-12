@@ -90,15 +90,29 @@ def data_preprocessing(dataset_name, adv_data_path_numpy):
 
     # Check if adversarial data is empty or has wrong shape
     if len(x_adv.shape) == 1 or (len(x_adv.shape) > 1 and x_adv.shape[0] == 0):
+        # Extract which_adv from path to suggest alternatives
+        which_adv = adv_data_path_numpy.replace("\\", "/").split("/")[-2] if "/" in adv_data_path_numpy.replace("\\", "/") else "unknown"
+        alternatives = []
+        if which_adv == "true":
+            alternatives = ["false", "full"]
+        elif which_adv == "false":
+            alternatives = ["true", "full"]
+        else:
+            alternatives = ["true", "false"]
+        
+        alt_suggestion = f"Try using 'which_adv' setting: {', '.join(alternatives)}" if alternatives else ""
+        
         raise ValueError(
             f"Adversarial data is empty! Shape: {x_adv.shape}. "
-            f"This usually means no adversarial examples were generated or the file is corrupted. "
-            f"Please check:\n"
-            f"  1. The adversarial generation step completed successfully\n"
-            f"  2. The file path is correct: {adv_data_path_numpy}\n"
-            f"  3. Try using a larger epsilon value or different 'which_adv' setting (true/false/full)\n"
-            f"  4. For small epsilon values, most examples may remain correctly classified, "
-            f"   resulting in empty 'true' or 'false' adversary sets"
+            f"This usually means no adversarial examples were generated or the file is corrupted.\n"
+            f"Possible causes:\n"
+            f"  1. Model accuracy is too low (weak model) - try training for more epochs\n"
+            f"  2. Epsilon value is too small (eps=0.01) - try larger epsilon (0.02, 0.03)\n"
+            f"  3. Current 'which_adv' setting ('{which_adv}') has no examples\n"
+            f"  {alt_suggestion}\n"
+            f"  4. File path: {adv_data_path_numpy}\n"
+            f"Note: For weak models (<20% accuracy), 'true' adversaries may be empty. "
+            f"Consider using 'full' or 'false' adversaries instead."
         )
 
     # Ensure x_adv has the correct shape (should be 4D: batch, height, width, channels)
@@ -417,7 +431,13 @@ def watermark_finetuning(dataset_name, adv_data_path_numpy, model_to_finetune_pa
     
     # Create tf.data.Dataset with prefetching
     train_ds = tf.data.Dataset.from_tensor_slices((x_train_adv_split, y_train_adv_split))
-    train_ds = train_ds.shuffle(min(10000, len(x_train_adv_split))).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    # Handle case when there are very few adversarial examples (avoid shuffle buffer_size = 0)
+    shuffle_buffer_size = max(1, min(10000, len(x_train_adv_split)))
+    if len(x_train_adv_split) > 1:
+        train_ds = train_ds.shuffle(shuffle_buffer_size).batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    else:
+        # Skip shuffle if only 1 example (or 0, but that should be caught earlier)
+        train_ds = train_ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)
     
     val_ds = tf.data.Dataset.from_tensor_slices((x_val_adv, y_val_adv))
     val_ds = val_ds.batch(batch_size).prefetch(tf.data.AUTOTUNE)

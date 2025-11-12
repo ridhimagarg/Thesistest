@@ -1,0 +1,49 @@
+{
+  "experiment_name": "model_extraction_attack",
+  "hyperparameters": {
+    "dataset_name": "svhn",
+    "attacker_model_architecture": "cifar10_base_2",
+    "num_epochs_to_steal": 1,
+    "dropout": 0.0,
+    "optimizer": "adam",
+    "lr": 0.001,
+    "weight_decay": 0.0,
+    "query_budgets": [
+      50
+    ],
+    "victim_model_path": "../models/finetuned_retraining_10-11-2025/true/svhn_1_CIFAR10_BASE_2fgsm_0.01_50_svhn_1_cifar10_base_2_Original_checkpoint_best/Victim_checkpoint_best.keras",
+    "adv_data_path": "../data/fgsm/svhn/true/fgsm_0.01_50_svhn_1_cifar10_base_2_Original_checkpoint_best.npz",
+    "timestamp": "2025-11-10T12:23:56.385643",
+    "tensorflow_version": "2.19.0",
+    "python_version": "3.11.10",
+    "gpu_count": 1,
+    "gpu_names": [
+      "/physical_device:GPU:0"
+    ]
+  },
+  "metrics": {
+    "victim_model_size_params": 307114,
+    "victim_model_size_mb": 1.1715469360351562,
+    "victim_watermark_acc": 0.03999999910593033
+  },
+  "training_history": [],
+  "results": [
+    {
+      "query_budget": 50,
+      "test_accuracy": 0.06795482337474823,
+      "watermark_accuracy": 0.0,
+      "is_stolen": false,
+      "verification_confidence": 0.0,
+      "p_value": 1.0,
+      "threshold": 0.06999999955296517,
+      "fidelity": 0.008890770533446233,
+      "watermark_retention": 0.0,
+      "test_acc_gap": 0.17923947423696518,
+      "kl_divergence": 0.38852471113204956,
+      "detectability_score": 0.24800631183559968,
+      "attack_time": 3.4083430767059326,
+      "stolen_model_size_params": 307114,
+      "stolen_model_size_mb": 1.1715469360351562
+    }
+  ]
+}

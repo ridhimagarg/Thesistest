@@ -493,8 +493,11 @@ class ExperimentRunner:
             )
             
             # Determine watermarked model path for retraining
+            # Note: watermarking_retraining.py uses the model name from the model function (e.g., "CIFAR10_BASE_2" with underscores)
+            # So we need to match that format, not remove underscores
             adv_name = self.config['adversarial_path'].replace("\\", "/").split("/")[-1].split(".npz")[0]
-            model_arch_short = self.config['model_architecture'].replace('_', '').upper()
+            # Convert model_architecture to uppercase to match model function return value (e.g., "CIFAR10_BASE_2")
+            model_arch_short = self.config['model_architecture'].upper()
             
             watermarked_path = f"../models/finetuned_retraining_{now}/{self.config['which_adv']}/{self.config['dataset_name']}_{self.config['epochs_watermarking']}_{model_arch_short}{adv_name}/Victim_checkpoint_best.keras"
         
